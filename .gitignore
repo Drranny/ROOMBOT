@@ -1,0 +1,24 @@
+# Node
+node_modules/
+.next/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+
+# Firebase
+serviceAccountKey.json
+*.json
+!package.json
+!package-lock.json
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
