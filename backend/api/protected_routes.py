@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from backend.auth.dependencies import get_current_user
+from auth.dependencies import get_current_user
 from typing import List
 
 router = APIRouter(prefix="/protected", tags=["protected"])

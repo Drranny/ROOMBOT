@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from backend.config.firebase_config import verify_firebase_token, get_user_by_uid
+from config.firebase_config import verify_firebase_token, get_user_by_uid
 import firebase_admin
 from firebase_admin import auth
 

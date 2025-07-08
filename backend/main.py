@@ -1,8 +1,9 @@
 from fastapi import FastAPI
-from backend.api.routes import router
-from backend.api.auth_routes import router as auth_router
-from backend.api.protected_routes import router as protected_router
-from backend.config.firebase_config import initialize_firebase
+from api.routes import router
+from api.auth_routes import router as auth_router
+from api.protected_routes import router as protected_router
+from config.firebase_config import initialize_firebase
+from api.users import router as users_router
 
 # Firebase 초기화
 initialize_firebase()
@@ -17,6 +18,7 @@ app = FastAPI(
 app.include_router(router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(protected_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
 
 @app.get("/")
 async def root():

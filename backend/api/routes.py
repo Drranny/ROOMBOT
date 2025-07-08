@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from backend.services.gpt import call_gpt
-from backend.auth.dependencies import get_current_user_optional
+from services.gpt import call_gpt
+from auth.dependencies import get_current_user_optional
 
 router = APIRouter()
 

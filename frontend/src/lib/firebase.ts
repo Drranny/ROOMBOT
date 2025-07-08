@@ -39,4 +39,16 @@ async function handleLogin() {
   } finally {
     isLoggingIn = false;
   }
+}
+
+async function sendUserToBackend() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const idToken = await user.getIdToken();
+  await fetch('http://localhost:8000/api/save-user', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${idToken}`
+    }
+  });
 } 

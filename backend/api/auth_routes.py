@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
-from backend.auth.dependencies import get_current_user, get_current_user_optional
-from backend.config.firebase_config import verify_firebase_token, create_custom_token
+from auth.dependencies import get_current_user, get_current_user_optional
+from config.firebase_config import verify_firebase_token, create_custom_token
 from typing import Optional
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
