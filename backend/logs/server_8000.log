@@ -1,0 +1,360 @@
+INFO:     Will watch for changes in these directories: ['/Users/choi/Roombot/ROOMBOT/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [82297] using StatReload
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:441: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_similarity:Loading SBERT model: paraphrase-multilingual-MiniLM-L12-v2
+INFO:sentence_transformers.SentenceTransformer:Load pretrained SentenceTransformer: paraphrase-multilingual-MiniLM-L12-v2
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:309: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_transformers.SentenceTransformer:Use pytorch device: cpu
+INFO:sentence_similarity:SBERT model loaded successfully
+INFO:     Started server process [82313]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:52027 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:01<00:00,  1.16s/it]Batches: 100%|██████████| 1/1 [00:01<00:00,  1.16s/it]
+INFO:     127.0.0.1:52029 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52043 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 48.98it/s]
+INFO:     127.0.0.1:52045 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52057 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 34.60it/s]
+INFO:     127.0.0.1:52059 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52071 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 47.22it/s]
+INFO:     127.0.0.1:52073 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52085 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 40.63it/s]
+INFO:     127.0.0.1:52087 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52099 - "GET /health HTTP/1.1" 200 OK
+INFO:sentence_similarity:Processing pair 1/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 48.02it/s]
+INFO:sentence_similarity:Processing pair 2/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 39.67it/s]
+INFO:sentence_similarity:Processing pair 3/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 36.63it/s]
+INFO:     127.0.0.1:52101 - "POST /batch-similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52113 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 59.81it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 18.06it/s]
+INFO:     127.0.0.1:52115 - "POST /find-similar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52341 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52365 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 19.43it/s]
+INFO:     127.0.0.1:52367 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52379 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 37.26it/s]
+INFO:     127.0.0.1:52381 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52393 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 35.56it/s]
+INFO:     127.0.0.1:52395 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52407 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 51.41it/s]
+INFO:     127.0.0.1:52409 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52435 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 40.46it/s]
+INFO:     127.0.0.1:52437 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52486 - "GET /health HTTP/1.1" 200 OK
+INFO:sentence_similarity:Processing pair 1/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 43.44it/s]
+INFO:sentence_similarity:Processing pair 2/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 43.18it/s]
+INFO:sentence_similarity:Processing pair 3/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 36.97it/s]
+INFO:     127.0.0.1:52488 - "POST /batch-similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52500 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 69.33it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 18.12it/s]
+INFO:     127.0.0.1:52502 - "POST /find-similar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53683 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53691 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 11.98it/s]
+INFO:     127.0.0.1:53693 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53707 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 50.44it/s]
+INFO:     127.0.0.1:53709 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53723 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 47.25it/s]
+INFO:     127.0.0.1:53725 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53739 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 49.23it/s]
+INFO:     127.0.0.1:53741 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53755 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 46.80it/s]
+INFO:     127.0.0.1:53757 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53771 - "GET /health HTTP/1.1" 200 OK
+INFO:sentence_similarity:Processing pair 1/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 36.86it/s]
+INFO:sentence_similarity:Processing pair 2/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 37.45it/s]
+INFO:sentence_similarity:Processing pair 3/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 47.51it/s]
+INFO:     127.0.0.1:53773 - "POST /batch-similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53787 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 58.15it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 16.39it/s]
+INFO:     127.0.0.1:53789 - "POST /find-similar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53907 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53907 - "GET /openapi.json HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 11.94it/s]
+INFO:     127.0.0.1:53947 - "POST /similarity HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'test_models.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [82313]
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:441: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_similarity:Loading SBERT model: paraphrase-multilingual-MiniLM-L12-v2
+INFO:sentence_transformers.SentenceTransformer:Load pretrained SentenceTransformer: paraphrase-multilingual-MiniLM-L12-v2
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:309: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_transformers.SentenceTransformer:Use pytorch device: cpu
+INFO:sentence_similarity:SBERT model loaded successfully
+INFO:     Started server process [91053]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:54210 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54218 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  1.64it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  1.64it/s]
+INFO:     127.0.0.1:54220 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54234 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 24.18it/s]
+INFO:     127.0.0.1:54236 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54250 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 27.61it/s]
+INFO:     127.0.0.1:54252 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54266 - "GET /health HTTP/1.1" 200 OK
+INFO:sentence_similarity:Processing pair 1/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 38.20it/s]
+INFO:sentence_similarity:Processing pair 2/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 38.85it/s]
+INFO:sentence_similarity:Processing pair 3/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 46.11it/s]
+INFO:     127.0.0.1:54268 - "POST /batch-similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54283 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 60.85it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 16.25it/s]
+INFO:     127.0.0.1:54285 - "POST /find-similar HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'test_models.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [91053]
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:441: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_similarity:Loading SBERT model: paraphrase-multilingual-MiniLM-L12-v2
+INFO:sentence_transformers.SentenceTransformer:Load pretrained SentenceTransformer: paraphrase-multilingual-MiniLM-L12-v2
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:309: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_transformers.SentenceTransformer:Use pytorch device: cpu
+INFO:sentence_similarity:SBERT model loaded successfully
+INFO:     Started server process [91285]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:54718 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54726 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  1.54it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  1.54it/s]
+INFO:     127.0.0.1:54728 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 26.06it/s]
+INFO:     127.0.0.1:54744 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54760 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 27.37it/s]
+INFO:     127.0.0.1:54762 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54779 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 24.36it/s]
+INFO:     127.0.0.1:54781 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54798 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 31.09it/s]
+INFO:     127.0.0.1:54800 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54814 - "GET /health HTTP/1.1" 200 OK
+INFO:sentence_similarity:Processing pair 1/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 33.32it/s]
+INFO:sentence_similarity:Processing pair 2/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 39.87it/s]
+INFO:sentence_similarity:Processing pair 3/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 48.94it/s]
+INFO:     127.0.0.1:54816 - "POST /batch-similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54830 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 52.56it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 19.09it/s]
+INFO:     127.0.0.1:54832 - "POST /find-similar HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'test_models.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [91285]
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:441: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_similarity:Loading SBERT model: paraphrase-multilingual-MiniLM-L12-v2
+INFO:sentence_transformers.SentenceTransformer:Load pretrained SentenceTransformer: paraphrase-multilingual-MiniLM-L12-v2
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:309: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_transformers.SentenceTransformer:Use pytorch device: cpu
+INFO:sentence_similarity:SBERT model loaded successfully
+INFO:     Started server process [91432]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:55418 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55426 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  1.45it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  1.45it/s]
+INFO:     127.0.0.1:55428 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55443 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 32.88it/s]
+INFO:     127.0.0.1:55445 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55459 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 30.14it/s]
+INFO:     127.0.0.1:55461 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55475 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 25.19it/s]
+INFO:     127.0.0.1:55477 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55491 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 27.31it/s]
+INFO:     127.0.0.1:55493 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55507 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 24.52it/s]
+INFO:     127.0.0.1:55509 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55523 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 26.05it/s]
+INFO:     127.0.0.1:55525 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55539 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 25.01it/s]
+INFO:     127.0.0.1:55541 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55556 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 21.82it/s]
+INFO:     127.0.0.1:55558 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55572 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 24.05it/s]
+INFO:     127.0.0.1:55574 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55588 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 26.11it/s]
+INFO:     127.0.0.1:55590 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55604 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 32.79it/s]
+INFO:     127.0.0.1:55606 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55620 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 24.10it/s]
+INFO:     127.0.0.1:55622 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55636 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 28.19it/s]
+INFO:     127.0.0.1:55638 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55652 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 25.69it/s]
+INFO:     127.0.0.1:55654 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55668 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 30.88it/s]
+INFO:     127.0.0.1:55670 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55684 - "GET /health HTTP/1.1" 200 OK
+INFO:sentence_similarity:Processing pair 1/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 27.47it/s]
+INFO:sentence_similarity:Processing pair 2/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 24.92it/s]
+INFO:sentence_similarity:Processing pair 3/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 34.84it/s]
+INFO:     127.0.0.1:55686 - "POST /batch-similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55700 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 58.49it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 17.53it/s]
+INFO:     127.0.0.1:55702 - "POST /find-similar HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'test_models.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [91432]
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:441: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_similarity:Loading SBERT model: paraphrase-multilingual-MiniLM-L12-v2
+INFO:sentence_transformers.SentenceTransformer:Load pretrained SentenceTransformer: paraphrase-multilingual-MiniLM-L12-v2
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:309: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_transformers.SentenceTransformer:Use pytorch device: cpu
+INFO:sentence_similarity:SBERT model loaded successfully
+INFO:     Started server process [91569]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:55799 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55807 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  1.64it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  1.64it/s]
+INFO:     127.0.0.1:55809 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55824 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 23.87it/s]
+INFO:     127.0.0.1:55826 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55840 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 25.02it/s]
+INFO:     127.0.0.1:55842 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55856 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 28.19it/s]
+INFO:     127.0.0.1:55858 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55872 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 30.02it/s]
+INFO:     127.0.0.1:55874 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55888 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 36.29it/s]
+INFO:     127.0.0.1:55890 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55904 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 28.18it/s]
+INFO:     127.0.0.1:55906 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55921 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 29.14it/s]
+INFO:     127.0.0.1:55923 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55937 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 19.12it/s]
+INFO:     127.0.0.1:55939 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55953 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 39.12it/s]
+INFO:     127.0.0.1:55955 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55969 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 35.81it/s]
+INFO:     127.0.0.1:55971 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55985 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 21.64it/s]
+INFO:     127.0.0.1:55987 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56001 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 38.44it/s]
+INFO:     127.0.0.1:56003 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56017 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 27.34it/s]
+INFO:     127.0.0.1:56019 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56033 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 30.80it/s]
+INFO:     127.0.0.1:56035 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56050 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 26.39it/s]
+INFO:     127.0.0.1:56052 - "POST /similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56066 - "GET /health HTTP/1.1" 200 OK
+INFO:sentence_similarity:Processing pair 1/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 38.94it/s]
+INFO:sentence_similarity:Processing pair 2/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 35.92it/s]
+INFO:sentence_similarity:Processing pair 3/3
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 44.84it/s]
+INFO:     127.0.0.1:56068 - "POST /batch-similarity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56082 - "GET /health HTTP/1.1" 200 OK
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 62.87it/s]
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 17.25it/s]
+INFO:     127.0.0.1:56084 - "POST /find-similar HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'nli_test.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [91569]
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:441: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_similarity:Loading SBERT model: paraphrase-multilingual-MiniLM-L12-v2
+INFO:sentence_transformers.SentenceTransformer:Load pretrained SentenceTransformer: paraphrase-multilingual-MiniLM-L12-v2
+/opt/anaconda3/lib/python3.11/site-packages/transformers/utils/generic.py:309: UserWarning: torch.utils._pytree._register_pytree_node is deprecated. Please use torch.utils._pytree.register_pytree_node instead.
+  _torch_pytree._register_pytree_node(
+INFO:sentence_transformers.SentenceTransformer:Use pytorch device: cpu
+INFO:sentence_similarity:SBERT model loaded successfully
+INFO:     Started server process [91988]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [91988]
+INFO:     Stopping reloader process [82297]
+/opt/anaconda3/lib/python3.11/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 5 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
