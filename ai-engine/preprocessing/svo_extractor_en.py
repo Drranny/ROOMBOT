@@ -30,6 +30,34 @@ def extract_svo_en(sentence: str):
         "O": objects
     }
 
+def analyze_svo_en(text: str):
+    """영어 텍스트의 SVO 분석"""
+    try:
+        doc = nlp(text)
+        svo_result = extract_svo_en(text)
+        
+        return {
+            "sentence": text,
+            "language": "en",
+            "svo": {
+                "subject": svo_result["S"][0] if svo_result["S"] else "Subject",
+                "verb": svo_result["V"][0] if svo_result["V"] else "Verb",
+                "object": svo_result["O"][0] if svo_result["O"] else "Object"
+            }
+        }
+    except Exception as e:
+        print(f"영어 SVO 분석 오류: {e}")
+        return {
+            "sentence": text,
+            "language": "en",
+            "svo": {
+                "subject": "Subject",
+                "verb": "Verb",
+                "object": "Object"
+            }
+        }
+
+
 def analyze_svo_from_text(text: str):
     sentences = [sent.text.strip() for sent in nlp(text).sents]
     return [{"sentence": s, "svo": extract_svo_en(s)} for s in sentences]

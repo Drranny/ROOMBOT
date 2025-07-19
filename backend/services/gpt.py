@@ -40,7 +40,7 @@ def call_gpt(user_input: str) -> str:
                 {"role": "user", "content": user_input}
             ],
             temperature=0.5,
-            max_tokens=200,  # 토큰 사용량 최소화
+            max_tokens=180,  # 토큰 사용량 최소화 (200 → 180)
         )
         return response.choices[0].message.content
         

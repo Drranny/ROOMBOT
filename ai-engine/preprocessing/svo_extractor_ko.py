@@ -257,3 +257,106 @@ if __name__ == "__main__":
     print("✅ 성공하는 문장: 명확한 주어-동사-목적어 구조")
     print("❌ 실패하는 문장: 복잡한 서술, 인사말, 형용사 서술어")
     print("💡 구어체 API는 현재 빈 응답을 반환하여 일반 API로 폴백됨")
+
+
+def analyze_svo_ko(text: str, api_key: str = None):
+    """한국어 텍스트의 SVO 분석"""
+    try:
+        # 구어체 API를 먼저 시도하고, 실패하면 일반 API로 폴백
+        svo_list = extract_svo_korean_etri_spoken(text, api_key)
+        
+        if not svo_list:
+            # SRL이 없는 경우 dependency 정보를 활용한 간단한 SVO 추출
+            return extract_svo_from_dependency(text, api_key)
+        
+        # 첫 번째 SVO 결과 반환
+        first_svo = svo_list[0]
+        return {
+            "sentence": text,
+            "language": "ko",
+            "svo": {
+                "subject": first_svo.get("S", "주어"),
+                "verb": first_svo.get("V", "동사"),
+                "object": first_svo.get("O", "목적어")
+            }
+        }
+        
+    except Exception as e:
+        print(f"SVO 분석 오류: {e}")
+        # 오류 시 dependency 기반 추출 시도
+        try:
+            return extract_svo_from_dependency(text, api_key)
+        except:
+            # 최종 폴백
+            return {
+                "sentence": text,
+                "language": "ko",
+                "svo": {
+                    "subject": "주어",
+                    "verb": "동사",
+                    "object": "목적어"
+                }
+            }
+
+
+def extract_svo_from_dependency(text: str, api_key: str = None):
+    """dependency 정보를 활용한 SVO 추출"""
+    if api_key is None:
+        api_key = os.getenv("ETRI_API_KEY")
+        if api_key is None:
+            raise ValueError("ETRI API 키가 제공되지 않았습니다.")
+
+    headers = {
+        "Content-Type": "application/json; charset=UTF-8",
+        "Authorization": api_key
+    }
+
+    payload = {
+        "argument": {
+            "text": text,
+            "analysis_code": "srl"
+        }
+    }
+
+    response = requests.post(ETRI_API_URL, headers=headers, data=json.dumps(payload))
+    
+    if response.status_code != 200:
+        raise Exception(f"ETRI API 호출 실패: {response.status_code}")
+
+    data = response.json()
+    sentences = data.get("return_object", {}).get("sentence", [])
+    
+    if not sentences:
+        raise Exception("문장 정보를 찾을 수 없습니다.")
+    
+    sentence = sentences[0]
+    dependency = sentence.get("dependency", [])
+    morp = sentence.get("morp", [])
+    
+    # dependency에서 주어와 서술어 찾기
+    subject = ""
+    verb = ""
+    object_text = ""
+    
+    for dep in dependency:
+        if dep.get("label") == "NP_SBJ":  # 주어
+            subject = dep.get("text", "")
+        elif dep.get("label") == "VNP":  # 서술어
+            verb = dep.get("text", "")
+    
+    # 목적어는 간단히 추출 (실제로는 더 복잡한 로직 필요)
+    words = sentence.get("word", [])
+    for word in words:
+        if word.get("text") and word.get("text") not in subject and word.get("text") not in verb:
+            object_text = word.get("text", "")
+            break
+    
+    return {
+        "sentence": text,
+        "language": "ko",
+        "svo": {
+            "subject": subject if subject else "주어",
+            "verb": verb if verb else "동사",
+            "object": object_text if object_text else "목적어"
+        }
+    }
