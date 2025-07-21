@@ -16,6 +16,7 @@ export default function Home() {
   const [showSVO, setShowSVO] = useState(false);
   const [svoResults, setSvoResults] = useState<any[]>([]);
   const [isSVOAnalyzing, setIsSVOAnalyzing] = useState(false);
+  const [svoMethod, setSvoMethod] = useState<'gpt' | 'konlpy'>('gpt');
 
   // GPT API 호출 함수
   const handleAsk = async () => {
@@ -89,7 +90,8 @@ export default function Home() {
           },
           body: JSON.stringify({ 
             text: sentence.trim(),
-            language: 'auto'
+            language: 'auto',
+            method: svoMethod  // 선택된 분석 방법 사용
           }),
         });
         
@@ -240,8 +242,34 @@ export default function Home() {
               )}
             </div>
             
-            {/* SVO 분석 토글 버튼 */}
-            <div className="mt-4">
+            {/* SVO 분석 방법 선택 */}
+            <div className="mt-4 space-y-3">
+              <div className="flex gap-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="svoMethod"
+                    value="gpt"
+                    checked={svoMethod === 'gpt'}
+                    onChange={(e) => setSvoMethod(e.target.value as 'gpt' | 'konlpy')}
+                    className="text-purple-500"
+                  />
+                  <span className="text-gray-700">🤖 GPT 분석</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="svoMethod"
+                    value="konlpy"
+                    checked={svoMethod === 'konlpy'}
+                    onChange={(e) => setSvoMethod(e.target.value as 'gpt' | 'konlpy')}
+                    className="text-purple-500"
+                  />
+                  <span className="text-gray-700">📊 KoNLPy 분석</span>
+                </label>
+              </div>
+              
+              {/* SVO 분석 토글 버튼 */}
               <button
                 onClick={() => {
                   if (!showSVO && sentences.length > 0) {
@@ -275,7 +303,7 @@ export default function Home() {
                   {svoResults.map((result, index) => (
                     <div key={index} className="bg-purple-50 border border-purple-200 rounded-xl p-4">
                       <div className="text-sm text-purple-600 mb-2 font-medium">
-                        문장 {index + 1} ({result.language === 'ko' ? '한국어' : '영어'})
+                        문장 {index + 1} ({result.language === 'ko' ? '🇰🇷 한국어' : '🇺🇸 영어'})
                       </div>
                       <div className="text-gray-800 mb-3">{result.sentence}</div>
                       <div className="grid grid-cols-3 gap-2 text-sm">

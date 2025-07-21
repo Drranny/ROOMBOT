@@ -11,16 +11,49 @@ if not api_key:
 
 client = OpenAI(api_key=api_key)
 
+def detect_language(text: str) -> str:
+    """
+    텍스트의 언어를 감지하는 함수
+    """
+    # 간단한 언어 감지 (한국어 vs 영어)
+    korean_chars = sum(1 for char in text if '\u3131' <= char <= '\u3163' or '\uac00' <= char <= '\ud7af')
+    english_chars = sum(1 for char in text if char.isalpha() and ord(char) < 128)
+    
+    # 한국어 문자가 더 많으면 한국어, 아니면 영어
+    if korean_chars > english_chars:
+        return "ko"
+    else:
+        return "en"
+
 def call_gpt(user_input: str) -> str:
     """
     OpenAI API를 사용하여 GPT 응답을 가져오는 함수
     """
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # curl에서 사용한 모델로 변경
-            store=True,  # curl에서 사용한 store 파라미터 추가
-            messages=[
-                {"role": "system", "content": """너는 SVO(주어-동사-목적어) 구조가 명확한 답변을 주는 AI야. 
+        # 언어 감지
+        language = detect_language(user_input)
+        
+        # 언어별 시스템 프롬프트 설정
+        if language == "en":
+            system_prompt = """You are an AI that provides clear SVO (Subject-Verb-Object) structured answers.
+
+Response writing rules:
+1. Provide answers with clear Subject (S), Verb (V), Object (O) structure
+2. If there are multiple SVOs in one sentence, break them into separate clear sentences
+3. Maintain accurate information like years, dates, etc.
+4. Minimize unnecessary modifiers or adverbs
+5. Avoid complex sentence structures or nested clauses
+6. Deliver key information concisely and clearly
+7. Use specific verbs rather than generic ones like "is" or "does"
+8. Don't include unknown information or speculation, only provide certain facts
+
+Example:
+❌ "King Sejong created Hangul in 1443, and it was officially announced as 'Hunminjeongeum' in 1446."
+✅ "King Sejong created Hangul. King Sejong created Hangul in 1443. King Sejong announced Hunminjeongeum in 1446."
+
+Please explain naturally and concisely."""
+        else:
+            system_prompt = """너는 SVO(주어-동사-목적어) 구조가 명확한 답변을 주는 AI야. 
 
 답변 작성 규칙:
 1. 주어(S), 동사(V), 목적어(O)가 명확한 문장으로 답변해
@@ -36,11 +69,17 @@ def call_gpt(user_input: str) -> str:
 ❌ "세종대왕이 한글을 창제한 날짜는 1443년으로 알려져 있으며, 1446년에 '훈민정음'이라는 이름으로 공식 발표되었습니다."
 ✅ "세종대왕이 한글을 창제했다. 세종대왕이 1443년에 한글을 창제했다. 세종대왕이 1446년에 훈민정음을 발표했다."
 
-질문에 대해 자연스럽고 간결하게 설명해줘."""},
+질문에 대해 자연스럽고 간결하게 설명해줘."""
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            store=True,
+            messages=[
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_input}
             ],
             temperature=0.5,
-            max_tokens=180,  # 토큰 사용량 최소화 (200 → 180)
+            max_tokens=180,
         )
         return response.choices[0].message.content
         

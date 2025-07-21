@@ -22,6 +22,7 @@
     python sentence_splitter.py
     python svo_extractor_ko.py
     python svo_extractor_en.py
+    python test_predicate_extraction.py
     ```
 
 ---
@@ -37,15 +38,80 @@
 
 - **svo_extractor_ko.py**
   - 한국어 SVO(주어-동사-목적어) 추출
+  - **서술어(predicate) 추출 기능 추가**: 동사(VV), 형용사(VA), 보조동사(VX) 모두 처리
   - ETRI 의미역 분석 API 활용 (API 키 필요, 환경변수 `ETRI_API_KEY`)
   - 구어체/문어체 모두 지원, 폴백 처리 내장
 
+- **svo_extractor_konlpy.py**
+  - **KoNLPy 기반 한국어 SVO 추출** (ETRI API 대안)
+  - Okt, Komoran, Hannanum 태거 지원
+  - API 키 불필요, 로컬에서 실행
+  - 빠른 처리 속도, 안정적인 성능
+
 - **svo_extractor_en.py**
   - 영어 SVO 추출 (spaCy 엔진 사용, 모델: `en_core_web_sm`)
+  - **서술어(predicate) 추출 기능 추가**: 동사(VERB), 형용사(ADJ), 보조동사(AUX) 모두 처리
+
+- **test_predicate_extraction.py**
+  - 서술어 추출 기능 테스트 스크립트
+  - 한국어/영어 서술어 추출 비교 테스트
+  - ETRI API와 KoNLPy 성능 비교
 
 ---
 
+## 🆕 서술어(Predicate) 추출 기능
 
+### 개선 사항
+- **기존**: 주어(S), 동사(V), 목적어(O)만 추출
+- **개선**: 서술어 타입을 구분하여 추출 (동사, 형용사, 보조동사 등)
+- **목적어 없는 문장 처리**: 자동사, 형용사 서술어 등 목적어가 없는 문장도 올바르게 처리
+
+### 한국어 서술어 타입
+- `VV`: 동사 (예: 읽다, 먹다, 가다)
+- `VA`: 형용사 (예: 좋다, 아름답다, 맛있다)
+- `VX`: 보조동사 (예: 있다, 없다)
+
+### 영어 서술어 타입
+- `VERB`: 동사 (예: eat, read, go)
+- `ADJ`: 형용사 (예: beautiful, happy, delicious)
+- `AUX`: 보조동사 (예: is, are, have)
+
+### 문장 구조별 처리
+1. **타동사 문장** (목적어 있음)
+   - "학생이 책을 읽는다." → S: 학생, V: 읽다, O: 책, has_object: true
+
+2. **자동사 문장** (목적어 없음)
+   - "아이가 놀았다." → S: 아이, V: 놀다, O: 없음, has_object: false
+
+3. **형용사 서술어 문장** (목적어 없음)
+   - "날씨가 좋다." → S: 날씨, V: 좋다, O: 없음, has_object: false
+
+4. **서술격 조사 문장** (목적어 없음)
+   - "그는 학생이다." → S: 그는, V: 이다, O: 없음, has_object: false
+
+### 사용 예시
+```python
+from svo_extractor import analyze_svo
+
+# 한국어 형용사 서술어 (목적어 없음) - ETRI API 사용
+text_ko = "날씨가 좋다."
+result_ko = analyze_svo(text_ko, lang="ko", api_key="<ETRI_API_KEY>")
+print(result_ko['svo']['predicate_type'])  # 'VA' (형용사)
+print(result_ko['svo']['has_object'])      # False (목적어 없음)
+
+# 한국어 형용사 서술어 (목적어 없음) - KoNLPy 사용
+result_ko_konlpy = analyze_svo(text_ko, lang="ko", method="konlpy")
+print(result_ko_konlpy['svo']['predicate_type'])  # 'VA' (형용사)
+print(result_ko_konlpy['svo']['has_object'])      # False (목적어 없음)
+
+# 영어 형용사 서술어 (목적어 없음)
+text_en = "The weather is beautiful."
+result_en = analyze_svo(text_en, lang="en")
+print(result_en['svo']['predicate_type'])  # 'ADJ' (형용사)
+print(result_en['svo']['has_object'])      # False (목적어 없음)
+```
+
+---
 
 ## 💡 간단 사용 예시
 
@@ -72,4 +138,5 @@ print(svo_en)
 ## 참고
 - 각 파일의 `__main__` 블록에서 테스트 코드 제공
 - ETRI API 키는 환경변수 또는 직접 인자로 전달 가능
+- 서술어 추출 기능은 형태소 분석과 의미역 분석을 결합하여 정확도를 향상시킴
 
