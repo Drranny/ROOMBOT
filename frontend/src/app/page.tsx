@@ -23,11 +23,20 @@ export default function Home() {
       setGptResponse("응답을 생성하고 있습니다...");
       setAnalysis(""); // 분석 결과 초기화
       
+      // 인증 토큰 가져오기
+      const idToken = user ? await user.getIdToken() : null;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+      
       const response = await fetch('http://localhost:8000/analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ prompt: question }),
       });
       
@@ -92,6 +101,23 @@ export default function Home() {
         
         const result = await response.json();
         console.log('SVO 분석 결과:', result);
+        
+        // SVO 결과를 데이터베이스에 저장
+        try {
+          const saveResponse = await fetch('http://localhost:8000/save_svo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: sentence.trim(),
+              language: result.language || 'auto',
+              result: JSON.stringify(result)
+            }),
+          });
+          console.log('SVO 저장 결과:', await saveResponse.json());
+        } catch (saveError) {
+          console.error('SVO 저장 오류:', saveError);
+        }
+        
         return result;
       });
       
@@ -150,8 +176,26 @@ export default function Home() {
   };
 
   const renderMainContent = () => {
-    // 로그인 체크 건너뛰기 - 개발용
-    const user = { displayName: "테스트 사용자" }; // 임시 사용자 객체
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return (
+        <div className="text-center py-8">
+          <div className="text-gray-600 mb-4">
+            서비스를 이용하려면 로그인이 필요합니다.
+          </div>
+          <div className="text-sm text-gray-500">
+            위의 Google 로그인 버튼을 클릭하여 로그인해주세요.
+          </div>
+        </div>
+      );
+    }
 
     return (
       <>
@@ -344,8 +388,8 @@ export default function Home() {
           <p className="text-gray-600 text-center text-sm">
             GPT 응답의 사실 여부를 분석해드립니다
           </p>
-          <div className="mt-2 text-sm text-gray-500">
-            개발 모드 - 로그인 없이 테스트 중
+          <div className="mt-2">
+            <LoginButton />
           </div>
         </div>
         {renderMainContent()}
