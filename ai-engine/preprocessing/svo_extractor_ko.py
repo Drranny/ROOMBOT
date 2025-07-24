@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-import requests
+import urllib3
 import json
 import os
 from dotenv import load_dotenv
@@ -8,355 +8,314 @@ load_dotenv()
 
 ETRI_API_URL = "http://epretx.etri.re.kr:8000/api/WiseNLU"
 ETRI_SPOKEN_API_URL = "http://epretx.etri.re.kr:8000/api/WiseNLU_spoken"
-DEFAULT_ANALYSIS_CODE = "srl"  # 의미역 분석 (소문자로 다시 시도)
 
-def extract_svo_korean_etri(text: str, api_key: str = None):
+
+def call_etri_api(text, analysis_code="srl", api_key=None, api_url=None):
     if api_key is None:
-        api_key = os.getenv("ETRI_API_KEY")  # 환경변수에서 가져옴
-        if api_key is None:
-            raise ValueError("ETRI API 키가 제공되지 않았습니다.")
-
-    headers = {
-        "Content-Type": "application/json; charset=UTF-8",
-        "Authorization": api_key
-    }
-
-    payload = {
+        api_key = os.getenv("ETRI_API_KEY")
+    if api_url is None:
+        api_url = ETRI_API_URL
+    request_json = {
         "argument": {
             "text": text,
-            "analysis_code": DEFAULT_ANALYSIS_CODE
+            "analysis_code": analysis_code
         }
     }
+    http = urllib3.PoolManager()
+    response = http.request(
+        "POST",
+        api_url,
+        headers={"Content-Type": "application/json; charset=UTF-8", "Authorization": api_key},
+        body=json.dumps(request_json)
+    )
+    if response.status != 200:
+        raise Exception(f"ETRI API 호출 실패: {response.status} - {response.data}")
+    return json.loads(response.data.decode("utf-8"))
 
-    response = requests.post(ETRI_API_URL, headers=headers, data=json.dumps(payload))
 
-    if response.status_code != 200:
-        raise Exception(f"ETRI API 호출 실패: {response.status_code} - {response.text}")
-
-    data = response.json()
-    print(f"API Response: {json.dumps(data, indent=2, ensure_ascii=False)}")  # 전체 응답 출력
-    
-    sentences = data.get("return_object", {}).get("sentence", [])
-
+def extract_svo_from_etri_response(data):
+    """ETRI API 응답에서 SVO 추출 (SRL + 형태소 분석 조합)"""
     svo_list = []
+    sentences = data.get("return_object", {}).get("sentence", [])
+    
     for sentence in sentences:
-        # SRL 필드에서 의미역 정보 추출
+        # 1. SRL 기반 SVO 추출 (동사 중심)
         srl_list = sentence.get("SRL", [])
         for srl in srl_list:
             verb = srl.get("verb", "")
             subject = None
             obj = None
-            
-            # argument에서 주어(ARG0)와 목적어(ARG1, ARG2) 찾기
             for arg in srl.get("argument", []):
                 arg_type = arg.get("type", "")
                 arg_text = arg.get("text", "")
-                
-                if arg_type == "ARG0":  # 주어
+                if arg_type == "ARG0":
                     subject = arg_text
-                elif arg_type in ["ARG1", "ARG2"]:  # 목적어
+                elif arg_type in ["ARG1", "ARG2"]:
                     obj = arg_text
-            
-            # SVO가 모두 있는 경우만 추가
             if subject and verb and obj:
                 svo_list.append({
                     "S": subject,
                     "V": verb,
-                    "O": obj
+                    "O": obj,
+                    "method": "SRL"
                 })
         
-        # 기존 semantic_role 필드도 확인 (하위 호환성)
-        semantic_roles = sentence.get("semantic_role", [])
-        for srl in semantic_roles:
-            verb = srl.get("predicate", {}).get("text", "")
-            subject = None
-            obj = None
-            for arg in srl.get("argument", []):
-                if arg["type"] == "ARG0":
-                    subject = arg["text"]
-                elif arg["type"] in ["ARG1", "ARG2"]:
-                    obj = arg["text"]
-            if subject and verb and obj:
+        # 2. 형태소 분석 기반 SVO 추출 (형용사 서술어 포함)
+        morphemes = sentence.get("morp", [])
+        if morphemes:
+            morpheme_svos = extract_svo_from_morphemes(morphemes)
+            svo_list.extend(morpheme_svos)
+    
+    return svo_list
+
+def extract_svo_from_morphemes(morphemes):
+    """형태소 분석 결과에서 SVO 추출 (형용사 서술어 포함, '이자/이다' 패턴 후처리)"""
+    svo_list = []
+    
+    # 형태소를 단어 단위로 그룹화
+    words = []
+    current_word = {"text": "", "pos": "", "lemma": ""}
+    
+    for morpheme in morphemes:
+        lemma = morpheme.get("lemma", "")
+        pos = morpheme.get("type", "")
+        
+        # 명사 + 조사, 동사 + 어미 등을 하나의 단어로 그룹화
+        if pos in ["JKS", "JKO", "JKG", "JX", "EC", "EF", "ETM"]:  # 조사, 어미
+            current_word["text"] += lemma
+            current_word["pos"] = pos
+        else:
+            if current_word["text"]:
+                words.append(current_word)
+            current_word = {"text": lemma, "pos": pos, "lemma": lemma}
+    
+    if current_word["text"]:
+        words.append(current_word)
+    
+    # SVO 패턴 찾기
+    subjects = []
+    verbs = []
+    objects = []
+    
+    for i, word in enumerate(words):
+        # 주어 찾기 (명사 + 주격조사)
+        if word["pos"] in ["NNG", "NNP", "NNB"] and i + 1 < len(words):
+            if words[i + 1]["pos"] == "JKS":  # 주격조사
+                subjects.append(word["text"])
+        
+        # 동사/형용사 찾기
+        if word["pos"] in ["VV", "VA", "VCP"]:  # 동사, 형용사, 보조동사
+            verbs.append(word["lemma"])
+        
+        # 목적어 찾기 (명사 + 목적격조사)
+        if word["pos"] in ["NNG", "NNP", "NNB"] and i + 1 < len(words):
+            if words[i + 1]["pos"] == "JKO":  # 목적격조사
+                objects.append(word["text"])
+    
+    # "~이자 ~이다" 및 "~이다" 패턴 후처리
+    # 예: 김연아는 피겨스케이팅 선수이자 올림픽 메달리스트이다.
+    #     김치찌개는 ... 음식이자 ... 요리이다.
+    for i, word in enumerate(words):
+        # 1. "이자" 패턴
+        if word["lemma"] == "이자":
+            # 주어: 앞의 명사
+            subject = ""
+            for j in range(i - 1, -1, -1):
+                if words[j]["pos"] in ["NNG", "NNP", "NNB"]:
+                    subject = words[j]["text"]
+                    break
+            # 목적어1: 바로 앞 명사
+            obj1 = subject
+            # 목적어2: 바로 뒤 명사
+            obj2 = ""
+            for j in range(i + 1, len(words)):
+                if words[j]["pos"] in ["NNG", "NNP", "NNB"]:
+                    obj2 = words[j]["text"]
+                    break
+            # "이다"가 뒤에 있으면 SVO 2개 생성
+            for k in range(i + 1, len(words)):
+                if words[k]["lemma"] == "이다":
+                    if subject and obj1:
+                        svo_list.append({"S": subject, "V": "이다", "O": obj1, "method": "pattern_이자"})
+                    if subject and obj2:
+                        svo_list.append({"S": subject, "V": "이다", "O": obj2, "method": "pattern_이자"})
+                    break
+        # 2. "이다" 단독 패턴 (A는 B이다)
+        if word["lemma"] == "이다":
+            # 주어: 앞의 명사
+            subject = ""
+            obj = ""
+            for j in range(i - 1, -1, -1):
+                if words[j]["pos"] in ["NNG", "NNP", "NNB"]:
+                    if not obj:
+                        obj = words[j]["text"]
+                    elif not subject:
+                        subject = words[j]["text"]
+                        break
+            if subject and obj:
+                svo_list.append({"S": subject, "V": "이다", "O": obj, "method": "pattern_이다"})
+    
+    # 일반적인 SVO 조합 생성
+    for subject in subjects:
+        for verb in verbs:
+            for obj in objects:
                 svo_list.append({
                     "S": subject,
                     "V": verb,
-                    "O": obj
+                    "O": obj,
+                    "method": "morpheme_analysis"
                 })
-
+    
     return svo_list
 
 
-def extract_svo_korean_etri_spoken(text: str, api_key: str = None):
-    """구어체 ETRI API를 사용한 SVO 추출"""
-    if api_key is None:
-        api_key = os.getenv("ETRI_API_KEY")  # 환경변수에서 가져옴
-        if api_key is None:
-            raise ValueError("ETRI API 키가 제공되지 않았습니다.")
-
-    headers = {
-        "Content-Type": "application/json; charset=UTF-8",
-        "Authorization": api_key
-    }
-
-    payload = {
-        "argument": {
-            "text": text,
-            "analysis_code": DEFAULT_ANALYSIS_CODE
-        }
-    }
-
+def analyze_svo_ko(text, api_key=None, analysis_code="srl", api_url=None):
+    """한국어 SVO 분석 메인 함수 (ETRI 공식 예제 기반)"""
     try:
-        response = requests.post(ETRI_SPOKEN_API_URL, headers=headers, data=json.dumps(payload))
-        
-        if response.status_code != 200:
-            print(f"구어체 API HTTP 오류: {response.status_code}")
-            # 구어체 API 실패 시 일반 API로 폴백
-            print("구어체 API 실패, 일반 API로 재시도...")
-            return extract_svo_korean_etri(text, api_key)
-
-        data = response.json()
-        print(f"구어체 API Response: {json.dumps(data, indent=2, ensure_ascii=False)}")  # 전체 응답 출력
-        
-        # 빈 응답 체크
-        if not data.get("return_object") or not data["return_object"].get("sentence"):
-            print("구어체 API 빈 응답, 일반 API로 재시도...")
-            return extract_svo_korean_etri(text, api_key)
-        
-        sentences = data.get("return_object", {}).get("sentence", [])
-
+        # SRL과 형태소 분석을 개별적으로 수행
         svo_list = []
-        for sentence in sentences:
-            # SRL 필드에서 의미역 정보 추출
-            srl_list = sentence.get("SRL", [])
-            for srl in srl_list:
-                verb = srl.get("verb", "")
-                subject = None
-                obj = None
-                
-                # argument에서 주어(ARG0)와 목적어(ARG1, ARG2) 찾기
-                for arg in srl.get("argument", []):
-                    arg_type = arg.get("type", "")
-                    arg_text = arg.get("text", "")
-                    
-                    if arg_type == "ARG0":  # 주어
-                        subject = arg_text
-                    elif arg_type in ["ARG1", "ARG2"]:  # 목적어
-                        obj = arg_text
-                
-                # SVO가 모두 있는 경우만 추가
-                if subject and verb and obj:
-                    svo_list.append({
-                        "S": subject,
-                        "V": verb,
-                        "O": obj
-                    })
-            
-            # 기존 semantic_role 필드도 확인 (하위 호환성)
-            semantic_roles = sentence.get("semantic_role", [])
-            for srl in semantic_roles:
-                verb = srl.get("predicate", {}).get("text", "")
-                subject = None
-                obj = None
-                for arg in srl.get("argument", []):
-                    if arg["type"] == "ARG0":
-                        subject = arg["text"]
-                    elif arg["type"] in ["ARG1", "ARG2"]:
-                        obj = arg["text"]
-                if subject and verb and obj:
-                    svo_list.append({
-                        "S": subject,
-                        "V": verb,
-                        "O": obj
-                    })
-
-        return svo_list
         
+        # 1. SRL 분석
+        try:
+            srl_data = call_etri_api(text, analysis_code="srl", api_key=api_key, api_url=api_url)
+            srl_svos = extract_svo_from_srl_only(srl_data)
+            svo_list.extend(srl_svos)
+        except Exception as e:
+            print(f"SRL 분석 실패: {e}")
+        
+        # 2. 형태소 분석
+        try:
+            morp_data = call_etri_api(text, analysis_code="morp", api_key=api_key, api_url=api_url)
+            morp_svos = extract_svo_from_morp_only(morp_data)
+            svo_list.extend(morp_svos)
+        except Exception as e:
+            print(f"형태소 분석 실패: {e}")
+        
+        # 중복 제거
+        unique_svos = remove_duplicate_svos(svo_list)
+        
+        return {
+            "svo_list": unique_svos,
+            "raw_response": {"srl": srl_data if 'srl_data' in locals() else None, "morp": morp_data if 'morp_data' in locals() else None},
+            "success": True
+        }
     except Exception as e:
-        print(f"구어체 API 오류: {e}")
-        print("일반 API로 재시도...")
-        return extract_svo_korean_etri(text, api_key)
+        return {
+            "svo_list": [],
+            "raw_response": None,
+            "success": False,
+            "error": str(e)
+        }
+
+def extract_svo_from_srl_only(data):
+    """SRL 분석 결과에서만 SVO 추출"""
+    svo_list = []
+    sentences = data.get("return_object", {}).get("sentence", [])
+    
+    for sentence in sentences:
+        srl_list = sentence.get("SRL", [])
+        for srl in srl_list:
+            verb = srl.get("verb", "")
+            subject = None
+            obj = None
+            for arg in srl.get("argument", []):
+                arg_type = arg.get("type", "")
+                arg_text = arg.get("text", "")
+                if arg_type == "ARG0":
+                    subject = arg_text
+                elif arg_type in ["ARG1", "ARG2"]:
+                    obj = arg_text
+            if subject and verb and obj:
+                svo_list.append({
+                    "S": subject,
+                    "V": verb,
+                    "O": obj,
+                    "method": "SRL"
+                })
+    
+    return svo_list
+
+def extract_svo_from_morp_only(data):
+    """형태소 분석 결과에서만 SVO 추출"""
+    svo_list = []
+    sentences = data.get("return_object", {}).get("sentence", [])
+    
+    for sentence in sentences:
+        morphemes = sentence.get("morp", [])
+        if morphemes:
+            morpheme_svos = extract_svo_from_morphemes(morphemes)
+            svo_list.extend(morpheme_svos)
+    
+    return svo_list
+
+def remove_duplicate_svos(svo_list):
+    """중복 SVO 제거"""
+    seen = set()
+    unique_svos = []
+    
+    for svo in svo_list:
+        # 정규화된 키 생성
+        key = f"{svo['S']}_{svo['V']}_{svo['O']}"
+        if key not in seen:
+            seen.add(key)
+            unique_svos.append(svo)
+    
+    return unique_svos
 
 
 if __name__ == "__main__":
-    # 핵심 테스트 케이스들 (성공/실패 패턴 분석용)
-    test_sentences = [
-        # ✅ 성공 예상 - 명확한 SVO
-        "학생이 책을 읽는다.",
-        "엄마가 밥을 짓는다.",
-        "개가 고양이를 쫓는다.",
-        
-        # ❌ 실패 예상 - 복잡한 구조
-        "윤동주는 한국의 독립운동가이자 시인이었다.",
-        "안녕하세요, 저는 김철수입니다.",
-        "오늘 날씨가 정말 좋네요",
-        
-        # 테스트용 간단한 문장들
-        "나는 사과를 먹었다.",
-        "그는 나에게 선물을 주었다.",
-        "아이가 친구와 함께 놀았다.",
-    ]
-    
-    # 환경변수에서 API 키를 가져오거나, 직접 입력
     api_key = os.getenv("ETRI_API_KEY")
-    if api_key is None:
+    if not api_key:
         print("ETRI_API_KEY 환경변수가 설정되지 않았습니다.")
         exit(1)
     
-    print(f"API Key: {api_key[:10]}...")  # API 키 앞 10자리만 출력
-    print(f"\n=== 한국어 SVO 추출 패턴 분석 ===\n")
-    
-    success_count = 0
-    total_count = len(test_sentences)
-    
-    # 각 테스트 케이스 실행
-    for i, text in enumerate(test_sentences, 1):
-        print(f"--- Test {i}: {text} ---")
-        try:
-            results = extract_svo_korean_etri(text, api_key)
-            if results:
-                success_count += 1
-                print(f"✅ SUCCESS - Found {len(results)} SVO triples:")
-                for j, r in enumerate(results, 1):
-                    print(f"  {j}. S: {r['S']}, V: {r['V']}, O: {r['O']}")
-            else:
-                print("❌ FAILED - No SVO triples found")
-        except Exception as e:
-            print(f"❌ ERROR: {e}")
-        print()
-    
-    # 구어체 API 테스트 (폴백 기능 포함)
-    print("=== 구어체 API 테스트 (폴백 기능 포함) ===")
-    spoken_test_cases = [
-        "안녕하세요 홍길동 교수입니다",
-        "오늘 날씨가 정말 좋네요",
-        "저는 한국어를 배우고 있어요"
+    # 다양한 테스트 문장들
+    test_cases = [
+        {
+            "name": "간단한 문장",
+            "text": "학생이 책을 읽는다."
+        },
+        {
+            "name": "복합 문장",
+            "text": "세종대왕은 조선의 제4대 왕이자 한글을 창제한 인물이다."
+        },
+        {
+            "name": "긴 복합문장 (공식 예제)",
+            "text": (
+                "윤동주(尹東柱, 1917년 12월 30일 ~ 1945년 2월 16일)는 한국의 독립운동가, 시인, 작가이다."
+                "중국 만저우 지방 지린 성 연변 용정에서 출생하여 명동학교에서 수학하였고, 숭실중학교와 연희전문학교를 졸업하였다. "
+                "숭실중학교 때 처음 시를 발표하였고, 1939년 연희전문 2학년 재학 중 소년(少年) 지에 시를 발표하며 정식으로 문단에 데뷔했다. "
+                "일본 유학 후 도시샤 대학 재학 중 , 1943년 항일운동을 했다는 혐의로 일본 경찰에 체포되어 후쿠오카 형무소(福岡刑務所)에 투옥, 100여 편의 시를 남기고 27세의 나이에 옥중에서 요절하였다. "
+                "사인이 일본의 생체실험이라는 견해가 있고 그의 사후 일본군에 의한 마루타, 생체실험설이 제기되었으나 불확실하다. "
+                "사후에 그의 시집 《하늘과 바람과 별과 시》가 출간되었다. "
+                "일제 강점기 후반의 양심적 지식인으로 인정받았으며, 그의 시는 일제와 조선총독부에 대한 비판과 자아성찰 등을 소재로 하였다. "
+                "그의 친구이자 사촌인 송몽규 역시 독립운동에 가담하려다가 체포되어 일제의 생체 실험으로 의문의 죽음을 맞는다. "
+                "1990년대 후반 이후 그의 창씨개명 '히라누마'가 알려져 논란이 일기도 했다. 본명 외에 윤동주(尹童柱), 윤주(尹柱)라는 필명도 사용하였다."
+            )
+        },
+        {
+            "name": "스포츠 관련 문장",
+            "text": "김연아는 피겨스케이팅 선수이자 올림픽 메달리스트이다."
+        },
+        {
+            "name": "음식 관련 문장",
+            "text": "김치찌개는 한국의 대표적인 음식이자 세계적으로 유명한 요리이다."
+        }
     ]
     
-    for i, text in enumerate(spoken_test_cases, 1):
-        print(f"--- Spoken Test {i}: {text} ---")
-        try:
-            results = extract_svo_korean_etri_spoken(text, api_key)
-            if results:
-                print(f"✅ SUCCESS - Found {len(results)} SVO triples:")
-                for j, r in enumerate(results, 1):
-                    print(f"  {j}. S: {r['S']}, V: {r['V']}, O: {r['O']}")
-            else:
-                print("❌ FAILED - No SVO triples found")
-        except Exception as e:
-            print(f"❌ ERROR: {e}")
+    print("=== 한국어 SVO 추출 테스트 ===\n")
+    
+    for i, test_case in enumerate(test_cases, 1):
+        print(f"--- Test {i}: {test_case['name']} ---")
+        print(f"[INPUT] {test_case['text'][:50]}...")
+        
+        result = analyze_svo_ko(test_case['text'], api_key=api_key, analysis_code="srl")
+        
+        if result["success"]:
+            print(f"[RESULT] 총 SVO 추출: {len(result['svo_list'])}")
+            for j, svo in enumerate(result["svo_list"], 1):
+                print(f"  {j}. S: {svo['S']}, V: {svo['V']}, O: {svo['O']}")
+        else:
+            print(f"[ERROR] 분석 실패: {result['error']}")
+        
         print()
-    
-    # 통계 출력
-    print("=== 테스트 결과 요약 ===")
-    print(f"총 테스트 케이스: {total_count}")
-    print(f"성공: {success_count}")
-    print(f"실패: {total_count - success_count}")
-    print(f"성공률: {success_count/total_count*100:.1f}%")
-    
-    print("\n=== 성공/실패 패턴 분석 ===")
-    print("✅ 성공하는 문장: 명확한 주어-동사-목적어 구조")
-    print("❌ 실패하는 문장: 복잡한 서술, 인사말, 형용사 서술어")
-    print("💡 구어체 API는 현재 빈 응답을 반환하여 일반 API로 폴백됨")
-
-
-def analyze_svo_ko(text: str, api_key: str = None):
-    """한국어 텍스트의 SVO 분석"""
-    try:
-        # 구어체 API를 먼저 시도하고, 실패하면 일반 API로 폴백
-        svo_list = extract_svo_korean_etri_spoken(text, api_key)
-        
-        if not svo_list:
-            # SRL이 없는 경우 dependency 정보를 활용한 간단한 SVO 추출
-            return extract_svo_from_dependency(text, api_key)
-        
-        # 첫 번째 SVO 결과 반환
-        first_svo = svo_list[0]
-        return {
-            "sentence": text,
-            "language": "ko",
-            "svo": {
-                "subject": first_svo.get("S", "주어"),
-                "verb": first_svo.get("V", "동사"),
-                "object": first_svo.get("O", "목적어")
-            }
-        }
-        
-    except Exception as e:
-        print(f"SVO 분석 오류: {e}")
-        # 오류 시 dependency 기반 추출 시도
-        try:
-            return extract_svo_from_dependency(text, api_key)
-        except:
-            # 최종 폴백
-            return {
-                "sentence": text,
-                "language": "ko",
-                "svo": {
-                    "subject": "주어",
-                    "verb": "동사",
-                    "object": "목적어"
-                }
-            }
-
-
-def extract_svo_from_dependency(text: str, api_key: str = None):
-    """dependency 정보를 활용한 SVO 추출"""
-    if api_key is None:
-        api_key = os.getenv("ETRI_API_KEY")
-        if api_key is None:
-            raise ValueError("ETRI API 키가 제공되지 않았습니다.")
-
-    headers = {
-        "Content-Type": "application/json; charset=UTF-8",
-        "Authorization": api_key
-    }
-
-    payload = {
-        "argument": {
-            "text": text,
-            "analysis_code": "srl"
-        }
-    }
-
-    response = requests.post(ETRI_API_URL, headers=headers, data=json.dumps(payload))
-    
-    if response.status_code != 200:
-        raise Exception(f"ETRI API 호출 실패: {response.status_code}")
-
-    data = response.json()
-    sentences = data.get("return_object", {}).get("sentence", [])
-    
-    if not sentences:
-        raise Exception("문장 정보를 찾을 수 없습니다.")
-    
-    sentence = sentences[0]
-    dependency = sentence.get("dependency", [])
-    morp = sentence.get("morp", [])
-    
-    # dependency에서 주어와 서술어 찾기
-    subject = ""
-    verb = ""
-    object_text = ""
-    
-    for dep in dependency:
-        if dep.get("label") == "NP_SBJ":  # 주어
-            subject = dep.get("text", "")
-        elif dep.get("label") == "VNP":  # 서술어
-            verb = dep.get("text", "")
-    
-    # 목적어는 간단히 추출 (실제로는 더 복잡한 로직 필요)
-    words = sentence.get("word", [])
-    for word in words:
-        if word.get("text") and word.get("text") not in subject and word.get("text") not in verb:
-            object_text = word.get("text", "")
-            break
-    
-    return {
-        "sentence": text,
-        "language": "ko",
-        "svo": {
-            "subject": subject if subject else "주어",
-            "verb": verb if verb else "동사",
-            "object": object_text if object_text else "목적어"
-        }
-    }
