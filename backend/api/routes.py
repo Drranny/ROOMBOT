@@ -17,10 +17,10 @@ router = APIRouter()
 class PromptRequest(BaseModel):
     prompt: str
 
-class SVORequest(BaseModel):
+class KeywordRequest(BaseModel):
     text: str
     language: str = "auto"  # auto, ko, en
-    method: str = "komoran"  # etri, komoran, gpt
+    method: str = "okt"  # okt, komoran, hannanum
 
 @router.post("/analyze")
 def analyze(data: PromptRequest, current_user: dict = Depends(get_current_user_optional)):
@@ -33,37 +33,36 @@ def analyze(data: PromptRequest, current_user: dict = Depends(get_current_user_o
         "authenticated": current_user is not None
     }
 
-@router.post("/svo")
-def svo_analysis(data: SVORequest):
+@router.post("/keywords")
+def keyword_analysis(data: KeywordRequest):
     try:
-        # GPT 기반 SVO 분석
-        if data.method == "gpt":
-            return analyze_svo_with_gpt(data.text)
-        
         # 언어 자동 감지
         if data.language == "auto":
             # 간단한 한국어 감지
             if any('\u3131' <= char <= '\u3163' or '\uac00' <= char <= '\ud7af' for char in data.text):
                 data.language = "ko"
+                data.method = "okt"  # 한국어는 Okt 사용
             else:
                 data.language = "en"
+                data.method = "spacy"  # 영어는 spaCy 사용
         
-        # 기존 SVO 분석 실행
+        # 키워드 추출 실행
         result = analyze_svo(data.text, data.language, method=data.method)
         
         return result
     except Exception as e:
         return {"error": str(e)}
 
-# 구조문장 저장 API
-class SVOSaveRequest(BaseModel):
+# 키워드 결과 저장 API
+class KeywordSaveRequest(BaseModel):
     text: str
     language: str
     result: str
 
-@router.post("/save_svo")
-def save_svo(data: SVOSaveRequest):
+@router.post("/save_keywords")
+def save_keywords(data: KeywordSaveRequest):
     try:
+        # 기존 save_svo_sentence 함수를 재사용 (필요시 별도 함수 생성)
         svo = save_svo_sentence(data.text, data.language, data.result)
         return {"id": svo.id, "text": svo.text, "language": svo.language, "result": svo.result}
     except Exception as e:

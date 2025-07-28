@@ -13,10 +13,9 @@ export default function Home() {
   const [sentences, setSentences] = useState<string[]>([]);
   const [hallucinationResults, setHallucinationResults] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showSVO, setShowSVO] = useState(false);
-  const [svoResults, setSvoResults] = useState<any[]>([]);
-  const [isSVOAnalyzing, setIsSVOAnalyzing] = useState(false);
-  const [svoMethod, setSvoMethod] = useState<'gpt' | 'konlpy'>('gpt');
+  const [showKeywords, setShowKeywords] = useState(false);
+  const [keywordResults, setKeywordResults] = useState<any[]>([]);
+  const [isKeywordAnalyzing, setIsKeywordAnalyzing] = useState(false);
 
   // GPT API 호출 함수
   const handleAsk = async () => {
@@ -63,19 +62,19 @@ export default function Home() {
     return text.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
   };
 
-  // SVO 분석 함수 (실제 ai-engine 연결)
-  const handleSVOAnalysis = async () => {
-    console.log('SVO 분석 시작, 문장들:', sentences);
+  // 키워드 추출 함수 (실제 ai-engine 연결)
+  const handleKeywordAnalysis = async () => {
+    console.log('키워드 추출 시작, 문장들:', sentences);
     
     if (sentences.length === 0) {
       console.log('분석할 문장이 없습니다.');
       return;
     }
     
-    setIsSVOAnalyzing(true);
+    setIsKeywordAnalyzing(true);
     
     try {
-      const svoPromises = sentences.map(async (sentence) => {
+      const keywordPromises = sentences.map(async (sentence) => {
         console.log('분석할 문장:', sentence);
         
         if (!sentence.trim()) {
@@ -83,15 +82,14 @@ export default function Home() {
           return null;
         }
         
-        const response = await fetch('http://localhost:8000/svo', {
+        const response = await fetch('http://localhost:8000/keywords', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ 
             text: sentence.trim(),
-            language: 'auto',
-            method: svoMethod  // 선택된 분석 방법 사용
+            language: 'auto'
           }),
         });
         
@@ -102,11 +100,11 @@ export default function Home() {
         }
         
         const result = await response.json();
-        console.log('SVO 분석 결과:', result);
+        console.log('키워드 추출 결과:', result);
         
-        // SVO 결과를 데이터베이스에 저장
+        // 키워드 결과를 데이터베이스에 저장
         try {
-          const saveResponse = await fetch('http://localhost:8000/save_svo', {
+          const saveResponse = await fetch('http://localhost:8000/save_keywords', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -115,36 +113,32 @@ export default function Home() {
               result: JSON.stringify(result)
             }),
           });
-          console.log('SVO 저장 결과:', await saveResponse.json());
+          console.log('키워드 저장 결과:', await saveResponse.json());
         } catch (saveError) {
-          console.error('SVO 저장 오류:', saveError);
+          console.error('키워드 저장 오류:', saveError);
         }
         
         return result;
       });
       
-      const results = await Promise.all(svoPromises);
+      const results = await Promise.all(keywordPromises);
       const validResults = results.filter(result => result !== null);
-      console.log('전체 SVO 결과:', validResults);
-      setSvoResults(validResults);
+      console.log('전체 키워드 결과:', validResults);
+      setKeywordResults(validResults);
     } catch (error) {
-      console.error('SVO 분석 오류:', error);
+      console.error('키워드 추출 오류:', error);
       // 오류 시 기본값으로 폴백
       const fallbackResults = sentences.map((sentence) => {
         const isKorean = /[가-힣]/.test(sentence);
         return {
           sentence: sentence.trim(),
           language: isKorean ? 'ko' : 'en',
-          svo: {
-            subject: isKorean ? '주어' : 'Subject',
-            verb: isKorean ? '동사' : 'Verb',
-            object: isKorean ? '목적어' : 'Object'
-          }
+          keywords: []
         };
       });
-      setSvoResults(fallbackResults);
+      setKeywordResults(fallbackResults);
     } finally {
-      setIsSVOAnalyzing(false);
+      setIsKeywordAnalyzing(false);
     }
   };
 
@@ -242,82 +236,52 @@ export default function Home() {
               )}
             </div>
             
-            {/* SVO 분석 방법 선택 */}
-            <div className="mt-4 space-y-3">
-              <div className="flex gap-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="svoMethod"
-                    value="gpt"
-                    checked={svoMethod === 'gpt'}
-                    onChange={(e) => setSvoMethod(e.target.value as 'gpt' | 'konlpy')}
-                    className="text-purple-500"
-                  />
-                  <span className="text-gray-700">🤖 GPT 분석</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="svoMethod"
-                    value="konlpy"
-                    checked={svoMethod === 'konlpy'}
-                    onChange={(e) => setSvoMethod(e.target.value as 'gpt' | 'konlpy')}
-                    className="text-purple-500"
-                  />
-                  <span className="text-gray-700">📊 KoNLPy 분석</span>
-                </label>
-              </div>
-              
-              {/* SVO 분석 토글 버튼 */}
-              <button
-                onClick={() => {
-                  if (!showSVO && sentences.length > 0) {
-                    handleSVOAnalysis();
-                  }
-                  setShowSVO(!showSVO);
-                }}
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 text-sm rounded-lg font-medium transition flex items-center justify-center gap-2"
-              >
-                {isSVOAnalyzing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    SVO 분석 중...
-                  </>
-                ) : (
-                  <>
-                    🔍 {showSVO ? 'SVO 분석 숨기기' : 'SVO 분석 보기'}
-                  </>
-                )}
-              </button>
-            </div>
+            {/* 키워드 추출 토글 버튼 */}
+            <button
+              onClick={() => {
+                if (!showKeywords && sentences.length > 0) {
+                  handleKeywordAnalysis();
+                }
+                setShowKeywords(!showKeywords);
+              }}
+              className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 text-sm rounded-lg font-medium transition flex items-center justify-center gap-2"
+            >
+              {isKeywordAnalyzing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  키워드 추출 중...
+                </>
+              ) : (
+                <>
+                  🔍 {showKeywords ? '키워드 추출 숨기기' : '키워드 추출 보기'}
+                </>
+              )}
+            </button>
             
-            {/* SVO 분석 결과 */}
-            {showSVO && svoResults.length > 0 && (
+            {/* 키워드 추출 결과 */}
+            {showKeywords && keywordResults.length > 0 && (
               <div className="mt-4">
                 <div className="text-black font-medium mb-3 flex items-center gap-2">
                   <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  SVO 분석 결과
+                  키워드 추출 결과
                 </div>
                 <div className="space-y-3">
-                  {svoResults.map((result, index) => (
+                  {keywordResults.map((result, index) => (
                     <div key={index} className="bg-purple-50 border border-purple-200 rounded-xl p-4">
                       <div className="text-sm text-purple-600 mb-2 font-medium">
                         문장 {index + 1} ({result.language === 'ko' ? '🇰🇷 한국어' : '🇺🇸 영어'})
                       </div>
                       <div className="text-gray-800 mb-3">{result.sentence}</div>
-                      <div className="grid grid-cols-3 gap-2 text-sm">
-                        <div className="bg-red-100 border border-red-200 rounded p-2">
-                          <div className="text-red-700 font-medium">주어 (S)</div>
-                          <div className="text-red-600">{result.svo.subject}</div>
+                      <div className="text-sm">
+                        <div className="text-purple-700 font-medium mb-2">
+                          추출된 키워드 ({result.keywords?.length || 0}개):
                         </div>
-                        <div className="bg-green-100 border border-green-200 rounded p-2">
-                          <div className="text-green-700 font-medium">동사 (V)</div>
-                          <div className="text-green-600">{result.svo.verb}</div>
-                        </div>
-                        <div className="bg-blue-100 border border-blue-200 rounded p-2">
-                          <div className="text-blue-700 font-medium">목적어 (O)</div>
-                          <div className="text-blue-600">{result.svo.object}</div>
+                        <div className="flex flex-wrap gap-2">
+                          {result.keywords?.map((keyword: any, keywordIndex: number) => (
+                            <span key={keywordIndex} className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
+                              {keyword.word} ({keyword.pos})
+                            </span>
+                          ))}
                         </div>
                       </div>
                     </div>

@@ -1,20 +1,16 @@
-from .svo_extractor_en import analyze_svo_en
-from .svo_extractor_ko import analyze_svo_ko
-from .svo_extractor_konlpy import analyze_svo_konlpy
+from .keyword_extractor import extract_keywords
 
-def analyze_svo(text: str, lang: str, api_key: str = None, method: str = "etri"):
+def analyze_svo(text: str, lang: str, api_key: str = None, method: str = "okt"):
     """
-    언어별 SVO 추출 통합 함수
+    언어별 키워드 추출 통합 함수 (기존 SVO 추출기 대체)
     
     Args:
         text: 분석할 텍스트
         lang: 언어 ("ko" 또는 "en")
-        api_key: ETRI API 키 (한국어 ETRI 방식 사용 시)
-        method: 분석 방법 ("etri" 또는 "konlpy" - 한국어만 해당)
+        api_key: 사용하지 않음 (하위 호환성을 위해 유지)
+        method: 한국어 태거 방법 ("okt", "komoran", "hannanum")
+    
+    Returns:
+        키워드 추출 결과
     """
-    if lang == "ko":
-        if method == "konlpy":
-            return analyze_svo_konlpy(text)
-        else:
-            return analyze_svo_ko(text, api_key)
-    return analyze_svo_en(text)
+    return extract_keywords(text, lang, method)
