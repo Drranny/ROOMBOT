@@ -1,6 +1,9 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from backend.services.gpt import call_gpt
+try:
+    from backend.services.gpt import call_gpt
+except ImportError:
+    from services.gpt import call_gpt
 from .analyze_wikipedia import router as analyze_wikipedia_router
 from .wikipedia_routes import router as wikipedia_router
 

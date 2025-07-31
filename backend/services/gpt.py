@@ -4,7 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = OpenAI(api_key="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")
+# 환경변수에서 API 키 읽기
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("OPENAI_API_KEY 환경변수가 설정되지 않았습니다. .env 파일에 API 키를 추가해주세요.")
+
+client = OpenAI(api_key=api_key)
 
 def call_gpt(user_input: str) -> str:
     try:

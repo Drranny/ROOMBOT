@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from sentence_similarity import SentenceSimilarityCalculator
+from services.sentence_similarity import SentenceSimilarityCalculator
 import logging
 
 # 로깅 설정
