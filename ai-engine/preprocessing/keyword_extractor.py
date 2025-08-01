@@ -28,7 +28,7 @@ class KeywordExtractor:
     
     def extract_keywords(self, text: str, method: str = "okt") -> Dict[str, Any]:
         """
-        문장에서 중요한 키워드를 추출합니다.
+        문장에서 중요한 키워드를 추출.
         
         Args:
             text: 분석할 텍스트
