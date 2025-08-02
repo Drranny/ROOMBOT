@@ -73,7 +73,6 @@ Please explain naturally and concisely."""
         
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            store=True,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_input}
@@ -100,11 +99,4 @@ def test_gpt():
         return False
 
 if __name__ == "__main__":
-    # 세종대왕 한글 창제 날짜 테스트
-    print("="*50)
-    print("세종대왕 한글 창제 날짜 테스트")
-    print("="*50)
-    test_question = "세종대왕이 한글을 만든 날짜는?"
-    result = call_gpt(test_question)
-    print(f"질문: {test_question}")
-    print(f"답변: {result}")
+    test_gpt()
