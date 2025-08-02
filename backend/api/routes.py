@@ -8,8 +8,8 @@ import json
 
 # ai-engine 경로 추가
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'ai-engine'))
-from preprocessing.svo_extractor import analyze_svo
-from services.db import save_svo_sentence
+from preprocessing.keyword_extractor import extract_keywords
+from services.db import save_keyword_sentence
 from services.google_search import google_search
 
 router = APIRouter()
@@ -41,13 +41,13 @@ def keyword_analysis(data: KeywordRequest):
             # 간단한 한국어 감지
             if any('\u3131' <= char <= '\u3163' or '\uac00' <= char <= '\ud7af' for char in data.text):
                 data.language = "ko"
-                data.method = "okt"  # 한국어는 Okt 사용
+                data.method = "simple_windows"  # Windows에서는 간단한 방법 사용
             else:
                 data.language = "en"
                 data.method = "spacy"  # 영어는 spaCy 사용
         
         # 키워드 추출 실행
-        result = analyze_svo(data.text, data.language, method=data.method)
+        result = extract_keywords(data.text, lang=data.language, method=data.method)
         
         return result
     except Exception as e:
@@ -62,9 +62,9 @@ class KeywordSaveRequest(BaseModel):
 @router.post("/save_keywords")
 def save_keywords(data: KeywordSaveRequest):
     try:
-        # 기존 save_svo_sentence 함수를 재사용 (필요시 별도 함수 생성)
-        svo = save_svo_sentence(data.text, data.language, data.result)
-        return {"id": svo.id, "text": svo.text, "language": svo.language, "result": svo.result}
+        # keyword extractor 결과 저장
+        keyword = save_keyword_sentence(data.text, data.language, data.result)
+        return {"id": keyword.id, "text": keyword.text, "language": keyword.language, "result": keyword.result}
     except Exception as e:
         return {"error": str(e)}
 

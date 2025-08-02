@@ -10,21 +10,22 @@ engine = create_engine(POSTGRES_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-class SVOSentence(Base):
-    __tablename__ = 'svo_sentences'
+class KeywordSentence(Base):
+    __tablename__ = 'keyword_sentences'
     id = Column(Integer, primary_key=True, index=True)
     text = Column(Text, nullable=False)
     language = Column(String(10), nullable=False)
     result = Column(Text, nullable=False)
+    method = Column(String(20), nullable=False, default='simple_windows')
 
 # 테이블 생성
 Base.metadata.create_all(bind=engine)
 
-def save_svo_sentence(text: str, language: str, result: str):
+def save_keyword_sentence(text: str, language: str, result: str, method: str = 'simple_windows'):
     db = SessionLocal()
-    svo = SVOSentence(text=text, language=language, result=result)
-    db.add(svo)
+    keyword = KeywordSentence(text=text, language=language, result=result, method=method)
+    db.add(keyword)
     db.commit()
-    db.refresh(svo)
+    db.refresh(keyword)
     db.close()
-    return svo
+    return keyword
