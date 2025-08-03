@@ -9,6 +9,7 @@ import json
 # ai-engine 경로 추가
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'ai-engine'))
 from preprocessing.keyword_extractor import extract_keywords
+from preprocessing.svo_extractor import analyze_svo
 from services.db import save_keyword_sentence
 from services.google_search import google_search
 
@@ -89,7 +90,7 @@ def keyword_analysis(data: KeywordRequest):
             method = "okt" if language == "ko" else "spacy"
         
         # 키워드 분석 실행
-        result = analyze_svo(data.text, language, method=method)
+        result = extract_keywords(data.text, lang=language, method=method)
         
         return {
             "text": data.text,
@@ -110,7 +111,7 @@ def save_keywords(data: SaveKeywordRequest):
     """키워드 결과 저장 엔드포인트"""
     try:
         # 데이터베이스에 저장
-        save_svo_sentence(data.text, data.language, data.result)
+        save_keyword_sentence(data.text, data.language, data.result)
         return {"message": "키워드 결과가 저장되었습니다"}
     except Exception as e:
         return {"error": str(e)}
