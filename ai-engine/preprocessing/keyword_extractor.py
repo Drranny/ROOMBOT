@@ -2,7 +2,29 @@ import re
 from typing import List, Dict, Any
 from collections import Counter
 import spacy
-from konlpy.tag import Okt, Komoran, Hannanum
+
+# Try to import KoNLPy, but handle the case where it fails
+try:
+    from konlpy.tag import Okt, Komoran, Hannanum
+    # 실제로 초기화를 시도해보기
+    test_okt = Okt()
+    KONLPY_AVAILABLE = True
+except Exception as e:
+    print(f"Warning: KoNLPy not available: {e}")
+    print("Korean NLP functionality will be disabled. Only English processing will work.")
+    KONLPY_AVAILABLE = False
+    # Create dummy classes for when KoNLPy is not available
+    class Okt:
+        def pos(self, text):
+            return []
+    
+    class Komoran:
+        def pos(self, text):
+            return []
+    
+    class Hannanum:
+        def pos(self, text):
+            return []
 
 class KeywordExtractor:
     """
@@ -19,12 +41,19 @@ class KeywordExtractor:
             except OSError:
                 print("spaCy 영어 모델이 설치되지 않았습니다. 'python -m spacy download en_core_web_sm' 실행 필요")
         
-        # 한국어 태거 초기화
-        self.ko_taggers = {
-            'okt': Okt(),
-            'komoran': Komoran(),
-            'hannanum': Hannanum()
-        }
+        # 한국어 태거 초기화 (only if KoNLPy is available)
+        if KONLPY_AVAILABLE:
+            try:
+                self.ko_taggers = {
+                    'okt': Okt(),
+                    'komoran': Komoran(),
+                    'hannanum': Hannanum()
+                }
+            except Exception as e:
+                print(f"KoNLPy 초기화 실패: {e}")
+                self.ko_taggers = {}
+        else:
+            self.ko_taggers = {}
     
     def extract_keywords(self, text: str, method: str = "okt") -> Dict[str, Any]:
         """
@@ -38,6 +67,12 @@ class KeywordExtractor:
             키워드 추출 결과 딕셔너리
         """
         if self.lang == "ko":
+            if not KONLPY_AVAILABLE or not self.ko_taggers:
+                return {
+                    "error": "KoNLPy가 설치되지 않았습니다. 한국어 처리가 불가능합니다.",
+                    "original_text": text,
+                    "language": "ko"
+                }
             return self._extract_keywords_ko(text, method)
         else:
             return self._extract_keywords_en(text)
@@ -184,6 +219,9 @@ if __name__ == "__main__":
         lang = "en" if any(ord(c) < 128 for c in text) else "ko"
         result = extract_keywords(text, lang)
         print(f"\n문장: {text}")
-        print(f"단어 수: {result['word_count']}")
-        print(f"추출 키워드 수: {result['keyword_count']}")
-        print(f"키워드: {result['keywords']}") 
+        print(f"단어 수: {result.get('word_count', 'N/A')}")
+        print(f"추출 키워드 수: {result.get('keyword_count', 'N/A')}")
+        if 'error' in result:
+            print(f"오류: {result['error']}")
+        else:
+            print(f"키워드: {result.get('keywords', [])}") 

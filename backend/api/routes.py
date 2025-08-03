@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from pydantic import BaseModel
 from services.gpt import call_gpt
 from auth.dependencies import get_current_user_optional
@@ -12,59 +12,106 @@ from preprocessing.svo_extractor import analyze_svo
 from services.db import save_svo_sentence
 from services.google_search import google_search
 
+# Wikipedia API 관련 import 추가
+from .analyze_wikipedia import router as analyze_wikipedia_router
+from .wikipedia_routes import router as wikipedia_router
+
 router = APIRouter()
 
 class PromptRequest(BaseModel):
     prompt: str
 
+# 키워드 추출 API
 class KeywordRequest(BaseModel):
     text: str
-    language: str = "auto"  # auto, ko, en
-    method: str = "okt"  # okt, komoran, hannanum
+    language: str = "auto"
+
+# SVO 분석 API
+class SVORequest(BaseModel):
+    sentence: str
 
 @router.post("/analyze")
-def analyze(data: PromptRequest, current_user: dict = Depends(get_current_user_optional)):
+async def analyze(prompt: str = Body(..., embed=True), current_user: dict = Depends(get_current_user_optional)):
     """AI 분석 엔드포인트 (인증 선택사항)"""
     user_info = current_user if current_user else {"uid": "anonymous", "email": "anonymous"}
     
-    return {
-        "response": call_gpt(data.prompt),
-        "user": user_info,
-        "authenticated": current_user is not None
-    }
+    try:
+        response_text = call_gpt(prompt)
+        return {
+            "response": response_text,
+            "user": user_info,
+            "authenticated": current_user is not None
+        }
+    except Exception as e:
+        return {
+            "response": f"오류가 발생했습니다: {str(e)}",
+            "user": user_info,
+            "authenticated": current_user is not None
+        }
 
-@router.post("/keywords")
-def keyword_analysis(data: KeywordRequest):
+@router.post("/svo")
+def svo_analysis(data: SVORequest):
+    """SVO 분석 엔드포인트"""
     try:
         # 언어 자동 감지
-        if data.language == "auto":
-            # 간단한 한국어 감지
-            if any('\u3131' <= char <= '\u3163' or '\uac00' <= char <= '\ud7af' for char in data.text):
-                data.language = "ko"
-                data.method = "okt"  # 한국어는 Okt 사용
-            else:
-                data.language = "en"
-                data.method = "spacy"  # 영어는 spaCy 사용
+        if any('\u3131' <= char <= '\u3163' or '\uac00' <= char <= '\ud7af' for char in data.sentence):
+            language = "ko"
+            method = "okt"
+        else:
+            language = "en"
+            method = "spacy"
         
-        # 키워드 추출 실행
-        result = analyze_svo(data.text, data.language, method=data.method)
+        # SVO 분석 실행
+        result = analyze_svo(data.sentence, language, method=method)
         
-        return result
+        return {
+            "sentence": data.sentence,
+            "language": language,
+            "svo": result
+        }
     except Exception as e:
         return {"error": str(e)}
 
-# 키워드 결과 저장 API
-class KeywordSaveRequest(BaseModel):
+@router.post("/keywords")
+def keyword_analysis(data: KeywordRequest):
+    """키워드 추출 엔드포인트"""
+    try:
+        # 언어 자동 감지
+        if data.language == "auto":
+            if any('\u3131' <= char <= '\u3163' or '\uac00' <= char <= '\ud7af' for char in data.text):
+                language = "ko"
+                method = "okt"
+            else:
+                language = "en"
+                method = "spacy"
+        else:
+            language = data.language
+            method = "okt" if language == "ko" else "spacy"
+        
+        # 키워드 분석 실행
+        result = analyze_svo(data.text, language, method=method)
+        
+        return {
+            "text": data.text,
+            "language": language,
+            "keywords": result.get("keywords", [])
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# 키워드 저장 API
+class SaveKeywordRequest(BaseModel):
     text: str
     language: str
     result: str
 
 @router.post("/save_keywords")
-def save_keywords(data: KeywordSaveRequest):
+def save_keywords(data: SaveKeywordRequest):
+    """키워드 결과 저장 엔드포인트"""
     try:
-        # 기존 save_svo_sentence 함수를 재사용 (필요시 별도 함수 생성)
-        svo = save_svo_sentence(data.text, data.language, data.result)
-        return {"id": svo.id, "text": svo.text, "language": svo.language, "result": svo.result}
+        # 데이터베이스에 저장
+        save_svo_sentence(data.text, data.language, data.result)
+        return {"message": "키워드 결과가 저장되었습니다"}
     except Exception as e:
         return {"error": str(e)}
 
@@ -198,3 +245,7 @@ Notes:
             },
             "error": str(e)
         }
+
+# Wikipedia API 라우터들 추가
+router.include_router(analyze_wikipedia_router)
+router.include_router(wikipedia_router)

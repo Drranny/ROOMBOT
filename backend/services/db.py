@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 # 환경변수 또는 직접 입력
-POSTGRES_URL = os.getenv('POSTGRES_URL', 'postgresql://jang-yunjeong@localhost:5432/postgres')
+POSTGRES_URL = os.getenv('POSTGRES_URL', 'postgresql://postgres:ju041803@roombot-new.chuqo4maweif.us-east-2.rds.amazonaws.com:5432/postgres')
 
 engine = create_engine(POSTGRES_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
