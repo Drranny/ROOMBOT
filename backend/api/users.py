@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends
-from auth.dependencies import get_current_user
-from db import get_db_connection
+from fastapi import APIRouter, HTTPException
+from auth_db import get_db_connection
 
 router = APIRouter()
 

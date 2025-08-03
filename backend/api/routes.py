@@ -8,8 +8,8 @@ import json
 
 # ai-engine 경로 추가
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'ai-engine'))
-from preprocessing.svo_extractor import analyze_svo
-from services.db import save_svo_sentence
+from preprocessing.keyword_extractor import extract_keywords
+from services.db import save_keyword_sentence
 from services.google_search import google_search
 
 # Wikipedia API 관련 import 추가

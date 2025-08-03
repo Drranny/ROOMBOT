@@ -1,4 +1,5 @@
 import re
+import sys
 from typing import List, Dict, Any
 from collections import Counter
 import spacy
@@ -34,26 +35,47 @@ class KeywordExtractor:
     def __init__(self, lang: str = "ko"):
         self.lang = lang
         self.nlp = None
+        self.ko_taggers = {}
         
+        # 한국어 태거 초기화 (에러 처리 포함)
+        if lang == "ko":
+            self._init_korean_taggers()
+        
+        # 영어 spaCy 모델 초기화
         if lang == "en":
-            try:
-                self.nlp = spacy.load("en_core_web_sm")
-            except OSError:
-                print("spaCy 영어 모델이 설치되지 않았습니다. 'python -m spacy download en_core_web_sm' 실행 필요")
+            self._init_english_model()
+    
+    def _init_korean_taggers(self):
+        """한국어 태거들을 안전하게 초기화"""
+        try:
+            self.ko_taggers['okt'] = Okt()
+            print("✅ Okt 태거 초기화 성공")
+        except Exception as e:
+            print(f"⚠️  Okt 태거 초기화 실패: {e}")
+            print("💡 Java가 설치되어 있는지 확인해주세요: brew install openjdk@11")
         
-        # 한국어 태거 초기화 (only if KoNLPy is available)
-        if KONLPY_AVAILABLE:
-            try:
-                self.ko_taggers = {
-                    'okt': Okt(),
-                    'komoran': Komoran(),
-                    'hannanum': Hannanum()
-                }
-            except Exception as e:
-                print(f"KoNLPy 초기화 실패: {e}")
-                self.ko_taggers = {}
-        else:
-            self.ko_taggers = {}
+        try:
+            self.ko_taggers['komoran'] = Komoran()
+            print("✅ Komoran 태거 초기화 성공")
+        except Exception as e:
+            print(f"⚠️  Komoran 태거 초기화 실패: {e}")
+        
+        try:
+            self.ko_taggers['hannanum'] = Hannanum()
+            print("✅ Hannanum 태거 초기화 성공")
+        except Exception as e:
+            print(f"⚠️  Hannanum 태거 초기화 실패: {e}")
+    
+    def _init_english_model(self):
+        """영어 spaCy 모델 초기화"""
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+            print("✅ spaCy 영어 모델 로드 성공")
+        except OSError:
+            print("❌ spaCy 영어 모델이 설치되지 않았습니다.")
+            print("💡 다음 명령어를 실행해주세요: python -m spacy download en_core_web_sm")
+        except Exception as e:
+            print(f"❌ spaCy 모델 로드 중 오류 발생: {e}")
     
     def extract_keywords(self, text: str, method: str = "okt") -> Dict[str, Any]:
         """
@@ -66,6 +88,13 @@ class KeywordExtractor:
         Returns:
             키워드 추출 결과 딕셔너리
         """
+        if not text or not text.strip():
+            return {
+                "error": "입력 텍스트가 비어있습니다.",
+                "original_text": text,
+                "language": self.lang
+            }
+        
         if self.lang == "ko":
             if not KONLPY_AVAILABLE or not self.ko_taggers:
                 return {
@@ -81,53 +110,90 @@ class KeywordExtractor:
         """
         한국어 키워드 추출
         """
-        # 문장 정제
-        cleaned_text = self._clean_text(text)
-        words = cleaned_text.split()
-        word_count = len(words)
+        # 사용 가능한 태거 확인
+        if not self.ko_taggers:
+            return {
+                "error": "사용 가능한 한국어 태거가 없습니다. Java 설치를 확인해주세요.",
+                "original_text": text,
+                "language": "ko"
+            }
         
-        # 형태소 분석
-        tagger = self.ko_taggers.get(method, self.ko_taggers['okt'])
-        pos_tags = tagger.pos(cleaned_text)
+        # 선택된 태거가 사용 가능한지 확인
+        if method not in self.ko_taggers:
+            available_methods = list(self.ko_taggers.keys())
+            return {
+                "error": f"'{method}' 태거를 사용할 수 없습니다. 사용 가능한 태거: {available_methods}",
+                "original_text": text,
+                "language": "ko",
+                "available_methods": available_methods
+            }
         
-        # 의미있는 단어만 추출
-        keywords = self._extract_all_words_ko(pos_tags, word_count)
-        keyword_count = len(keywords)
-        
-        return {
-            "original_text": text,
-            "cleaned_text": cleaned_text,
-            "word_count": word_count,
-            "keyword_count": keyword_count,
-            "keywords": keywords,
-            "method": method,
-            "language": "ko"
-        }
+        try:
+            # 문장 정제
+            cleaned_text = self._clean_text(text)
+            words = cleaned_text.split()
+            word_count = len(words)
+            
+            # 형태소 분석
+            tagger = self.ko_taggers[method]
+            pos_tags = tagger.pos(cleaned_text)
+            
+            # 의미있는 단어만 추출
+            keywords = self._extract_all_words_ko(pos_tags, word_count)
+            keyword_count = len(keywords)
+            
+            return {
+                "original_text": text,
+                "cleaned_text": cleaned_text,
+                "word_count": word_count,
+                "keyword_count": keyword_count,
+                "keywords": keywords,
+                "method": method,
+                "language": "ko"
+            }
+        except Exception as e:
+            return {
+                "error": f"키워드 추출 중 오류 발생: {str(e)}",
+                "original_text": text,
+                "language": "ko",
+                "method": method
+            }
     
     def _extract_keywords_en(self, text: str) -> Dict[str, Any]:
         """
         영어 키워드 추출
         """
         if not self.nlp:
-            return {"error": "spaCy 모델이 로드되지 않았습니다."}
+            return {
+                "error": "spaCy 모델이 로드되지 않았습니다. 'python -m spacy download en_core_web_sm' 실행 필요",
+                "original_text": text,
+                "language": "en"
+            }
         
-        # 문장 정제
-        cleaned_text = self._clean_text(text)
-        doc = self.nlp(cleaned_text)
-        word_count = len([token for token in doc if not token.is_space])
-        
-        # 의미있는 단어만 추출
-        keywords = self._extract_all_words_en(doc, word_count)
-        keyword_count = len(keywords)
-        
-        return {
-            "original_text": text,
-            "cleaned_text": cleaned_text,
-            "word_count": word_count,
-            "keyword_count": keyword_count,
-            "keywords": keywords,
-            "language": "en"
-        }
+        try:
+            # 문장 정제
+            cleaned_text = self._clean_text(text)
+            doc = self.nlp(cleaned_text)
+            word_count = len([token for token in doc if not token.is_space])
+            
+            # 의미있는 단어만 추출
+            keywords = self._extract_all_words_en(doc, word_count)
+            keyword_count = len(keywords)
+            
+            return {
+                "original_text": text,
+                "cleaned_text": cleaned_text,
+                "word_count": word_count,
+                "keyword_count": keyword_count,
+                "keywords": keywords,
+                "language": "en"
+            }
+        except Exception as e:
+            return {
+                "error": f"영어 키워드 추출 중 오류 발생: {str(e)}",
+                "original_text": text,
+                "language": "en"
+            }
     
     def _extract_all_words_ko(self, pos_tags: List[tuple], keyword_count: int) -> List[Dict[str, str]]:
         """
@@ -206,22 +272,78 @@ def extract_keywords(text: str, lang: str = "ko", method: str = "okt") -> Dict[s
     return extractor.extract_keywords(text, method)
 
 if __name__ == "__main__":
-    # 테스트 코드
+    print("🔍 키워드 추출 테스트를 시작합니다...")
+    print("=" * 50)
+    
+    # 테스트 케이스
     test_cases = [
-        "세종대왕은 1392년에 조선을 건국했다.",  # 4단어
-        "날씨가 좋다.",  # 2단어
-        "아이가 공원에서 친구들과 함께 놀고 있다.",  # 7단어
-        "The weather is beautiful today.",  # 5단어 (영어)
-        "John and Mary eat an apple and a banana.",  # 9단어 (영어)
+        {
+            "text": "세종대왕은 1392년에 조선을 건국했다.",
+            "lang": "ko",
+            "method": "okt"
+        },
+        {
+            "text": "날씨가 좋다.",
+            "lang": "ko", 
+            "method": "okt"
+        },
+        {
+            "text": "아이가 공원에서 친구들과 함께 놀고 있다.",
+            "lang": "ko",
+            "method": "okt"
+        },
+        {
+            "text": "The weather is beautiful today.",
+            "lang": "en",
+            "method": "okt"
+        },
+        {
+            "text": "John and Mary eat an apple and a banana.",
+            "lang": "en",
+            "method": "okt"
+        },
+        {
+            "text": "",  # 빈 텍스트 테스트
+            "lang": "ko",
+            "method": "okt"
+        }
     ]
     
-    for text in test_cases:
-        lang = "en" if any(ord(c) < 128 for c in text) else "ko"
-        result = extract_keywords(text, lang)
-        print(f"\n문장: {text}")
-        print(f"단어 수: {result.get('word_count', 'N/A')}")
-        print(f"추출 키워드 수: {result.get('keyword_count', 'N/A')}")
-        if 'error' in result:
-            print(f"오류: {result['error']}")
+    # 각 테스트 케이스 실행
+    for i, test_case in enumerate(test_cases, 1):
+        print(f"\n📝 테스트 {i}: {test_case['text'][:30]}{'...' if len(test_case['text']) > 30 else ''}")
+        print("-" * 40)
+        
+        try:
+            result = extract_keywords(
+                test_case['text'], 
+                lang=test_case['lang'], 
+                method=test_case['method']
+            )
+            
+            # 결과 출력
+            if 'error' in result:
+                print(f"❌ 오류: {result['error']}")
+            else:
+                print(f"✅ 언어: {result['language']}")
+                print(f"📊 단어 수: {result['word_count']}")
+                print(f"🔑 추출 키워드 수: {result['keyword_count']}")
+                print(f"📝 키워드: {[kw['word'] for kw in result['keywords']]}")
+                
+        except Exception as e:
+            print(f"❌ 예상치 못한 오류: {str(e)}")
+    
+    print("\n" + "=" * 50)
+    print("🎯 키워드 추출 테스트 완료!")
+    
+    # 사용 가능한 태거 확인
+    print("\n🔧 사용 가능한 한국어 태거:")
+    try:
+        extractor = KeywordExtractor("ko")
+        available_taggers = list(extractor.ko_taggers.keys())
+        if available_taggers:
+            print(f"✅ 사용 가능: {', '.join(available_taggers)}")
         else:
-            print(f"키워드: {result.get('keywords', [])}") 
+            print("❌ 사용 가능한 태거가 없습니다. Java 설치를 확인해주세요.")
+    except Exception as e:
+        print(f"❌ 태거 확인 중 오류: {str(e)}")
