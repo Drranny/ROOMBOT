@@ -27,6 +27,11 @@ class KeywordRequest(BaseModel):
     text: str
     language: str = "auto"
 
+# GPT 기반 핵심 키워드 추출 API
+class GPTKeywordRequest(BaseModel):
+    text: str
+    language: str = "auto"
+
 # SVO 분석 API
 class SVORequest(BaseModel):
     sentence: str
@@ -96,6 +101,50 @@ def keyword_analysis(data: KeywordRequest):
             "text": data.text,
             "language": language,
             "keywords": result.get("keywords", [])
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@router.post("/gpt-keywords")
+def gpt_keyword_analysis(data: GPTKeywordRequest):
+    """GPT 기반 핵심 키워드 추출 엔드포인트"""
+    try:
+        # 언어 자동 감지
+        if data.language == "auto":
+            if any('\u3131' <= char <= '\u3163' or '\uac00' <= char <= '\ud7af' for char in data.text):
+                language = "ko"
+            else:
+                language = "en"
+        else:
+            language = data.language
+        
+        # GPT에게 핵심 키워드 추출 요청
+        if language == "ko":
+            prompt = f"""다음 문장에서 가장 중요한 핵심 키워드 1개를 추출해주세요. 
+            고유명사, 인명, 지명, 중요한 개념 등을 우선적으로 선택하세요.
+            답변은 키워드만 출력하세요.
+            
+            문장: {data.text}
+            핵심 키워드:"""
+        else:
+            prompt = f"""Extract the most important single keyword from the following sentence.
+            Prioritize proper nouns, names, places, and important concepts.
+            Return only the keyword.
+            
+            Sentence: {data.text}
+            Key keyword:"""
+        
+        # GPT 호출
+        response = call_gpt(prompt)
+        
+        # 응답 정리 (불필요한 문자 제거)
+        keyword = response.strip().replace('"', '').replace("'", '').replace('.', '').replace(',', '')
+        
+        return {
+            "text": data.text,
+            "language": language,
+            "main_keyword": keyword,
+            "gpt_response": response
         }
     except Exception as e:
         return {"error": str(e)}

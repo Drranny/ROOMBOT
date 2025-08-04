@@ -87,7 +87,10 @@ export default function Home() {
 
           // 가장 긴 키워드를 대표 키워드로 설정
           if (uniqueKeywords.length > 0) {
-            const mainKeyword = selectMainKeyword(uniqueKeywords);
+            const mainKeyword = await selectMainKeyword(
+              uniqueKeywords,
+              data.response
+            );
             setWikiMainKeyword(mainKeyword);
           }
         }
@@ -110,21 +113,45 @@ export default function Home() {
   };
 
   // 가장 긴 키워드를 메인 키워드로 선택하는 함수
-  const selectMainKeyword = (keywords: string[]) => {
+  const selectMainKeyword = async (keywords: string[], sentence: string) => {
     if (keywords.length === 0) return '';
 
-    // 숫자나 특수문자만 있는 키워드는 제외
-    const validKeywords = keywords.filter((keyword) => {
-      const cleanKeyword = keyword.replace(/[0-9\s\-_]/g, '');
-      return cleanKeyword.length > 0;
-    });
+    try {
+      // GPT에게 핵심 키워드 추출 요청
+      const response = await fetch('http://localhost:8000/gpt-keywords', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: sentence,
+          language: 'auto',
+        }),
+      });
 
-    if (validKeywords.length === 0) return keywords[0] || '';
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    // 가장 긴 키워드 선택 (고유명사나 중요한 키워드가 보통 더 길다)
-    return validKeywords.reduce((longest, current) =>
-      current.length > longest.length ? current : longest
-    );
+      const result = await response.json();
+      console.log('GPT 키워드 추출 결과:', result);
+
+      return result.main_keyword || '';
+    } catch (error) {
+      console.error('GPT 키워드 추출 오류:', error);
+
+      // GPT 실패 시 기존 로직으로 폴백
+      const validKeywords = keywords.filter((keyword) => {
+        const cleanKeyword = keyword.replace(/[0-9\s\-_]/g, '');
+        return cleanKeyword.length > 0;
+      });
+
+      if (validKeywords.length === 0) return keywords[0] || '';
+
+      return validKeywords.reduce((longest, current) =>
+        current.length > longest.length ? current : longest
+      );
+    }
   };
 
   // 키워드 추출 함수 (실제 ai-engine 연결)
@@ -417,7 +444,10 @@ export default function Home() {
 
                     // 가장 긴 키워드를 대표 키워드로 설정
                     if (uniqueKeywords.length > 0) {
-                      const mainKeyword = selectMainKeyword(uniqueKeywords);
+                      const mainKeyword = await selectMainKeyword(
+                        uniqueKeywords,
+                        gptResponse
+                      );
                       setWikiMainKeyword(mainKeyword);
                     }
                   }
