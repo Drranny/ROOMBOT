@@ -23,16 +23,6 @@ cd ..
 # 잠시 대기
 sleep 3
 
-# 백그라운드에서 NLI 서버 실행
-echo "🧠 NLI 서버를 시작합니다..."
-cd backend
-$PYTHON_PATH services/nli_api.py &
-NLI_PID=$!
-cd ..
-
-# 잠시 대기
-sleep 3
-
 # 백그라운드에서 프론트엔드 실행
 echo "🎨 프론트엔드 서버를 시작합니다..."
 cd frontend
@@ -45,7 +35,6 @@ echo ""
 echo "🌐 접속 주소:"
 echo "   Frontend: http://localhost:3000"
 echo "   Backend API: http://localhost:8000"
-echo "   NLI Server: http://localhost:8001"
 echo "   API Docs: http://localhost:8000/docs"
 echo ""
 echo "🛑 서버를 중지하려면 Ctrl+C를 누르세요"
@@ -55,7 +44,6 @@ cleanup() {
     echo ""
     echo "🛑 서버를 종료합니다..."
     kill $BACKEND_PID 2>/dev/null
-    kill $NLI_PID 2>/dev/null
     kill $FRONTEND_PID 2>/dev/null
     exit 0
 }

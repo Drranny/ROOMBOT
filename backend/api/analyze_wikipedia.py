@@ -16,22 +16,28 @@ try:
 except ImportError:
     from backend.services.sentence_similarity import SentenceSimilarityCalculator
 
-# NLI API 호출 함수
+# NLI 내부 함수 호출
 def call_nli_api(premise: str, hypothesis: str) -> dict:
-    """NLI API 호출 함수"""
+    """NLI 내부 함수 호출"""
     try:
-        nli_resp = requests.post(
-            "http://localhost:8001/nli",
-            json={"premise": premise, "hypothesis": hypothesis},
-            timeout=30
-        )
-        if nli_resp.status_code == 200:
-            return nli_resp.json()
-        else:
-            logging.error(f"NLI API 호출 실패: {nli_resp.status_code}")
-            return {"label": "error", "score": 0.0}
+        from transformers import pipeline
+        from threading import Lock
+        
+        # 모델 로딩 (스레드 안전)
+        nli_pipe = None
+        nli_lock = Lock()
+        
+        with nli_lock:
+            if nli_pipe is None:
+                nli_pipe = pipeline("text-classification", model="facebook/bart-large-mnli")
+        
+        input_text = f"{premise} </s></s> {hypothesis}"
+        result = nli_pipe(input_text, truncation=True)[0]
+        label = result['label'].lower()
+        score = float(result['score'])
+        return {"label": label, "score": score}
     except Exception as e:
-        logging.error(f"NLI API 호출 중 예외: {str(e)}")
+        logging.error(f"NLI 내부 함수 호출 중 예외: {str(e)}")
         return {"label": "error", "score": 0.0}
 
 router = APIRouter()
