@@ -14,11 +14,15 @@ pip install --upgrade pip
 
 # PyTorch 먼저 설치 (호환성 문제 방지)
 echo "🔥 PyTorch를 먼저 설치합니다..."
-pip install torch==2.0.1 torchvision==0.15.2
+pip install torch==2.2.2 torchvision==0.17.2
 
 # 기본 의존성 설치
 echo "📦 기본 의존성을 설치합니다..."
 pip install -r requirements.txt
+
+# 추가 패키지 설치
+echo "📦 추가 패키지를 설치합니다..."
+pip install openpyxl
 
 # spaCy 영어 모델 설치
 echo "🌐 spaCy 영어 모델을 설치합니다..."

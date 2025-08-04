@@ -80,6 +80,17 @@ else
     echo "💡 다음 명령어를 실행해주세요: python -m spacy download en_core_web_sm"
 fi
 
+# openpyxl 확인
+echo ""
+echo "📊 openpyxl 확인..."
+python3 -c "import openpyxl; print('✅ openpyxl 설치됨')" 2>/dev/null
+if [ $? -eq 0 ]; then
+    echo "✅ openpyxl 설치됨"
+else
+    echo "❌ openpyxl이 설치되지 않았습니다."
+    echo "💡 다음 명령어를 실행해주세요: pip install openpyxl"
+fi
+
 # konlpy 태거 확인
 echo ""
 echo "🇰🇷 konlpy 태거 확인..."
@@ -90,6 +101,18 @@ else
     echo "❌ konlpy 태거 초기화 실패"
     echo "💡 Java 설치를 확인해주세요: brew install openjdk@11"
 fi
+
+# HuggingFace 모델 확인
+echo ""
+echo "🤗 HuggingFace 모델 확인..."
+python3 -c "
+try:
+    from transformers import pipeline
+    from sentence_transformers import SentenceTransformer
+    print('✅ HuggingFace 모델 로드 성공')
+except Exception as e:
+    print(f'❌ HuggingFace 모델 로드 실패: {e}')
+" 2>/dev/null
 
 echo ""
 echo "=================================="

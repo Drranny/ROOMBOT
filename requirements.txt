@@ -24,6 +24,7 @@ torchvision==0.17.2
 # Scientific Computing
 numpy>=1.21.0
 pandas>=2.0.0
+openpyxl>=3.1.0
 
 # Korean NLP (Optional - requires Java)
 konlpy==0.6.0
