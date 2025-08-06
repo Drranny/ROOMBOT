@@ -46,6 +46,11 @@ export default function Home() {
       setGptResponse('응답을 생성하고 있습니다...');
       setAnalysis(''); // 분석 결과 초기화
 
+      // 키워드 추출 상태 초기화
+      setShowKeywords(false);
+      setKeywordResults([]);
+      setIsKeywordAnalyzing(false);
+
       // 인증 토큰 가져오기
       const idToken = user ? await user.getIdToken() : null;
 
@@ -250,58 +255,105 @@ export default function Home() {
     setAnalysis('');
 
     try {
-      // Wikipedia 분석 호출 (실제 분석은 실행)
-      const response = await fetch('http://localhost:8000/analyze/wikipedia', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: gptResponse,
-          keywords: wikiKeywords
-            .split(',')
-            .map((k) => k.trim())
-            .filter(Boolean),
-          main_keyword: wikiMainKeyword,
-          top_k: wikiTopK,
-          save_excel: saveExcel,
-        }),
-      });
+      // GPT 응답을 문장으로 분리
+      const sentenceList = splitIntoSentences(gptResponse);
+      setSentences(sentenceList);
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || '분석 실패');
+      // 각 문장에 대해 개별적으로 할루시네이션 체크
+      const allResults = [];
+
+      for (let i = 0; i < sentenceList.length; i++) {
+        const sentence = sentenceList[i];
+
+        // 각 문장에 대해 키워드 추출
+        const keywordResponse = await fetch('http://localhost:8000/keywords', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: sentence.trim(),
+            language: 'auto',
+          }),
+        });
+
+        if (keywordResponse.ok) {
+          const keywordData = await keywordResponse.json();
+          const keywords =
+            keywordData.keywords?.map((kw: any) => kw.word) || [];
+
+          // GPT 기반 대표 키워드 추출
+          const gptKeywordResponse = await fetch(
+            'http://localhost:8000/gpt-keywords',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                text: sentence.trim(),
+                language: 'auto',
+              }),
+            }
+          );
+
+          let mainKeyword = keywords[0] || '';
+          if (gptKeywordResponse.ok) {
+            const gptKeywordData = await gptKeywordResponse.json();
+            mainKeyword = gptKeywordData.main_keyword || keywords[0] || '';
+          }
+
+          // Wikipedia 분석 호출
+          const response = await fetch(
+            'http://localhost:8000/analyze/wikipedia',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                query: sentence,
+                keywords: keywords,
+                main_keyword: mainKeyword,
+                top_k: wikiTopK,
+                save_excel: saveExcel,
+              }),
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            let results = data;
+            if (data && typeof data === 'object' && 'candidates' in data) {
+              results = data.candidates;
+            }
+
+            // 첫 번째 결과만 사용
+            if (results.length > 0) {
+              const firstResult = results[0];
+              const isHallucination =
+                firstResult.hallucination_judgment ===
+                '할루시네이션일 가능성 있음';
+
+              const result = {
+                sentence: sentence,
+                isHallucination,
+                reason: firstResult.hallucination_judgment || '판단 불가',
+                similarity: firstResult.similarity,
+                nli_label: firstResult.nli_label,
+                nli_score: firstResult.nli_score,
+                detailedResults: results, // 상세 결과 저장
+              };
+
+              allResults.push(result);
+            }
+          }
+        }
       }
 
-      const data = await response.json();
-      console.log('할루시네이션 분석 결과:', data);
+      setHallucinationResults(allResults);
 
-      // 결과 처리
-      let results = data;
-      if (data && typeof data === 'object' && 'candidates' in data) {
-        results = data.candidates;
-      }
-
-      // 첫 번째 결과만 간단하게 표시
-      if (results.length > 0) {
-        const firstResult = results[0];
-        const isHallucination =
-          firstResult.hallucination_judgment === '할루시네이션일 가능성 있음';
-
-        const simpleResult = {
-          sentence: gptResponse,
-          isHallucination,
-          reason: firstResult.hallucination_judgment || '판단 불가',
-          similarity: firstResult.similarity,
-          nli_label: firstResult.nli_label,
-          nli_score: firstResult.nli_score,
-        };
-
-        setHallucinationResults([simpleResult]);
-        setAnalysis(`할루시네이션률: ${isHallucination ? 100 : 0}%`);
-
-        // 상세 결과는 별도로 저장 (Wikipedia 상세 분석 버튼에서 사용)
-        setWikiResults(results);
-        setShowWikiResult(false); // 상세 결과는 숨김
-      }
+      // 전체 할루시네이션률 계산
+      const hallucinationRate = Math.round(
+        (allResults.filter((r: any) => r.isHallucination).length /
+          allResults.length) *
+          100
+      );
+      setAnalysis(`할루시네이션률: ${hallucinationRate}%`);
     } catch (error) {
       console.error('할루시네이션 분석 오류:', error);
       setAnalysis('분석 실패');
@@ -606,18 +658,16 @@ export default function Home() {
                       </>
                     )}
                   </div>
-                  {/* Wikipedia 상세 분석 버튼은 첫 번째 결과에만 표시 */}
-                  {hallucinationResults.length === 1 && (
-                    <button
-                      onClick={() => {
-                        // 모달 열기
-                        setShowDetailModal(true);
-                      }}
-                      className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 text-sm rounded-lg font-medium transition flex items-center justify-center gap-2"
-                    >
-                      📚 Wikipedia 상세 분석
-                    </button>
-                  )}
+                  {/* Wikipedia 상세 분석 버튼 - 각 문장마다 표시 */}
+                  <button
+                    onClick={() => {
+                      setWikiResults(result.detailedResults);
+                      setShowDetailModal(true);
+                    }}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 text-sm rounded-lg font-medium transition flex items-center justify-center gap-2"
+                  >
+                    📚 Wikipedia 상세 분석
+                  </button>
                 </div>
               ))}
             </div>
@@ -641,7 +691,7 @@ export default function Home() {
               </div>
 
               <div className="space-y-3">
-                {wikiResults.slice(0, 5).map((result: any, index: number) => (
+                {wikiResults.slice(0, 1).map((result: any, index: number) => (
                   <div
                     key={index}
                     className={`border rounded-xl p-4 ${

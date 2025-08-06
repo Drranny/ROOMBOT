@@ -5,6 +5,8 @@ import requests
 import re
 import urllib.parse
 import logging
+import hashlib
+import json
 try:
     from services.text_summarizer import TextSummarizer
     from services.synonym_finder import SynonymFinder
@@ -15,6 +17,18 @@ except ImportError:
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# 검색 결과 캐시
+search_cache = {}
+
+def get_cache_key(main_keyword: str, keywords: List[str]) -> str:
+    """캐시 키 생성"""
+    cache_data = {
+        "main_keyword": main_keyword,
+        "keywords": sorted(keywords)  # 정렬하여 일관성 보장
+    }
+    cache_str = json.dumps(cache_data, sort_keys=True)
+    return hashlib.md5(cache_str.encode()).hexdigest()
 
 def extract_keyword_summary(text: str, keywords: List[str]) -> str:
     """
@@ -86,6 +100,19 @@ def search_wikipedia_multi(data: WikipediaMultiRequest):
         logger.info(f"한국어로 감지됨: {data.main_keyword} (영어: {english_chars}, 한글: {korean_chars})")
     
     encoded_keyword = urllib.parse.quote(data.main_keyword)
+    
+    # 캐시 키 생성
+    cache_key = get_cache_key(data.main_keyword, data.keywords)
+    
+    # 캐시에서 검색 결과 가져오기
+    if cache_key in search_cache:
+        logger.info(f"캐시된 검색 결과 사용: {data.main_keyword}")
+        cached_result = search_cache[cache_key]
+        return {
+            "candidates": cached_result["candidates"],
+            "expanded_keywords": cached_result["expanded_keywords"],
+            "original_keywords": cached_result["original_keywords"]
+        }
     
     # MediaWiki API를 사용하여 전체 문서 내용 가져오기
     S = requests.Session()
@@ -300,6 +327,13 @@ def search_wikipedia_multi(data: WikipediaMultiRequest):
         except Exception as e:
             logger.error(f"문장 요약 중 오류 발생: {str(e)}")
             pass
+    
+    # 캐시에 결과 저장
+    search_cache[cache_key] = {
+        "candidates": filtered,
+        "expanded_keywords": all_keywords,
+        "original_keywords": data.keywords
+    }
     
     # 확장된 키워드 정보와 함께 반환
     return {

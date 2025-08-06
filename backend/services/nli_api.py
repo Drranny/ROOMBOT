@@ -31,4 +31,14 @@ def nli_infer(req: NLIRequest):
     result = pipe(input_text, truncation=True)[0]
     label = result['label'].lower()
     score = float(result['score'])
-    return NLIResponse(label=label, score=score) 
+    return NLIResponse(label=label, score=score)
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🧠 NLI 서버를 시작합니다...")
+    print("📍 서버 주소: http://localhost:8001")
+    uvicorn.run(app, host="0.0.0.0", port=8001) 

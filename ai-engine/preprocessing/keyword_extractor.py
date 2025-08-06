@@ -11,8 +11,7 @@ try:
     test_okt = Okt()
     KONLPY_AVAILABLE = True
 except Exception as e:
-    print(f"Warning: KoNLPy not available: {e}")
-    print("Korean NLP functionality will be disabled. Only English processing will work.")
+    # 영어만 사용할 예정이므로 경고 메시지 제거
     KONLPY_AVAILABLE = False
     # Create dummy classes for when KoNLPy is not available
     class Okt:

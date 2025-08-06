@@ -5,6 +5,7 @@ import logging
 import requests
 from datetime import datetime
 import pandas as pd
+from threading import Lock
 
 # 내부 함수 import
 from .wikipedia_routes import search_wikipedia_multi
@@ -16,17 +17,18 @@ try:
 except ImportError:
     from backend.services.sentence_similarity import SentenceSimilarityCalculator
 
+# NLI 모델 전역 변수
+nli_pipe = None
+nli_lock = Lock()
+
 # NLI 내부 함수 호출
 def call_nli_api(premise: str, hypothesis: str) -> dict:
     """NLI 내부 함수 호출"""
+    global nli_pipe
     try:
         from transformers import pipeline
-        from threading import Lock
         
         # 모델 로딩 (스레드 안전)
-        nli_pipe = None
-        nli_lock = Lock()
-        
         with nli_lock:
             if nli_pipe is None:
                 nli_pipe = pipeline("text-classification", model="facebook/bart-large-mnli")
