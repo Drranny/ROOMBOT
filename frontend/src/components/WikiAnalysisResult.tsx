@@ -10,6 +10,7 @@ export interface WikiAnalysisResultItem {
   nli_score: number;
   final_score?: number; // 백엔드에서 올 수도 있으니 optional
   summary_method?: string; // 요약 방식 (GPT-4o-mini, 키워드 요약, 원본 등)
+  hallucination_judgment?: string; // 할루시네이션 판단
 }
 
 interface WikiAnalysisResultProps {
@@ -69,6 +70,7 @@ const WikiAnalysisResult: React.FC<WikiAnalysisResultProps> = ({
               <th className="px-3 py-2 border">NLI</th>
               <th className="px-3 py-2 border">NLI 점수</th>
               <th className="px-3 py-2 border">최종 점수</th>
+              <th className="px-3 py-2 border">할루시네이션 판단</th>
               <th className="px-3 py-2 border">요약 방식</th>
               <th className="px-3 py-2 border">위키 링크</th>
               <th className="px-3 py-2 border">문장</th>
@@ -95,6 +97,21 @@ const WikiAnalysisResult: React.FC<WikiAnalysisResultProps> = ({
                 </td>
                 <td className="px-3 py-2 border">
                   {Math.round(calcFinalScore(item) * 1000) / 1000}
+                </td>
+                <td className="px-3 py-2 border">
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      item.hallucination_judgment ===
+                      '할루시네이션일 가능성이 낮다'
+                        ? 'bg-green-100 text-green-700 border border-green-200'
+                        : item.hallucination_judgment ===
+                          '할루시네이션일 가능성 있음'
+                        ? 'bg-red-100 text-red-700 border border-red-200'
+                        : 'bg-gray-100 text-gray-700 border border-gray-200'
+                    }`}
+                  >
+                    {item.hallucination_judgment || 'N/A'}
+                  </span>
                 </td>
                 <td className="px-3 py-2 border">
                   <span

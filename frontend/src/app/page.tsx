@@ -37,6 +37,9 @@ export default function Home() {
   const [expandedKeywords, setExpandedKeywords] = useState<string[]>([]);
   const [originalKeywords, setOriginalKeywords] = useState<string[]>([]);
 
+  // 모달 상태 추가
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
   // GPT API 호출 함수
   const handleAsk = async () => {
     try {
@@ -241,37 +244,70 @@ export default function Home() {
   };
 
   // 환각 탐지 함수 (테스트 케이스)
-  const handleDetect = () => {
+  const handleDetect = async () => {
     setIsAnalyzing(true);
+    setHallucinationResults([]);
+    setAnalysis('');
 
-    // GPT 응답을 문장으로 분리
-    const sentenceList = splitIntoSentences(gptResponse);
-    setSentences(sentenceList);
-
-    // 테스트 케이스: 환각 결과 생성
-    setTimeout(() => {
-      const results = sentenceList.map((sentence, index) => {
-        // 테스트용 환각 판정 (실제로는 AI 엔진에서 분석)
-        const isHallucination =
-          sentence.includes('1392') || sentence.includes('조선을 세웠다');
-        return {
-          sentence: sentence.trim(),
-          isHallucination,
-          reason: isHallucination
-            ? '(1392년 → 실제로는 1397년)'
-            : '사실 확인됨',
-        };
+    try {
+      // Wikipedia 분석 호출 (실제 분석은 실행)
+      const response = await fetch('http://localhost:8000/analyze/wikipedia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: gptResponse,
+          keywords: wikiKeywords
+            .split(',')
+            .map((k) => k.trim())
+            .filter(Boolean),
+          main_keyword: wikiMainKeyword,
+          top_k: wikiTopK,
+          save_excel: saveExcel,
+        }),
       });
 
-      setHallucinationResults(results);
-      setIsAnalyzing(false);
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || '분석 실패');
+      }
 
-      // 전체 환각률 계산
-      const hallucinationRate = Math.round(
-        (results.filter((r) => r.isHallucination).length / results.length) * 100
-      );
-      setAnalysis(`환각률: ${hallucinationRate}%`);
-    }, 2000);
+      const data = await response.json();
+      console.log('할루시네이션 분석 결과:', data);
+
+      // 결과 처리
+      let results = data;
+      if (data && typeof data === 'object' && 'candidates' in data) {
+        results = data.candidates;
+      }
+
+      // 첫 번째 결과만 간단하게 표시
+      if (results.length > 0) {
+        const firstResult = results[0];
+        const isHallucination =
+          firstResult.hallucination_judgment === '할루시네이션일 가능성 있음';
+
+        const simpleResult = {
+          sentence: gptResponse,
+          isHallucination,
+          reason: firstResult.hallucination_judgment || '판단 불가',
+          similarity: firstResult.similarity,
+          nli_label: firstResult.nli_label,
+          nli_score: firstResult.nli_score,
+        };
+
+        setHallucinationResults([simpleResult]);
+        setAnalysis(`할루시네이션률: ${isHallucination ? 100 : 0}%`);
+
+        // 상세 결과는 별도로 저장 (Wikipedia 상세 분석 버튼에서 사용)
+        setWikiResults(results);
+        setShowWikiResult(false); // 상세 결과는 숨김
+      }
+    } catch (error) {
+      console.error('할루시네이션 분석 오류:', error);
+      setAnalysis('분석 실패');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   // Wikipedia+SBERT+NLI 분석 요청 함수
@@ -534,7 +570,9 @@ export default function Home() {
           <div>
             <div className="text-black font-medium mb-3 flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              분석 결과
+              {hallucinationResults.length === 1
+                ? '할루시네이션 분석 결과'
+                : 'Wikipedia 상세 분석 결과'}
             </div>
             <div className="space-y-3">
               {hallucinationResults.map((result, index) => (
@@ -546,12 +584,15 @@ export default function Home() {
                       : 'bg-green-50 border-green-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="text-sm text-gray-600 mb-3">
+                    {result.sentence}
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
                     {result.isHallucination ? (
                       <>
                         <span className="text-red-500 text-xl">❌</span>
                         <span className="text-red-700 font-medium">
-                          문장 {index + 1}: 환각
+                          할루시네이션 가능성 있음
                         </span>
                         <span className="text-red-500 text-xl">❌</span>
                       </>
@@ -559,202 +600,96 @@ export default function Home() {
                       <>
                         <span className="text-green-500 text-xl">✓</span>
                         <span className="text-green-700 font-medium">
-                          문장 {index + 1}: 사실
+                          할루시네이션 가능성이 낮습니다
                         </span>
                         <span className="text-green-500 text-xl">✓</span>
                       </>
                     )}
                   </div>
-                  <div className="text-sm text-gray-600">{result.reason}</div>
+                  {/* Wikipedia 상세 분석 버튼은 첫 번째 결과에만 표시 */}
+                  {hallucinationResults.length === 1 && (
+                    <button
+                      onClick={() => {
+                        // 모달 열기
+                        setShowDetailModal(true);
+                      }}
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 text-sm rounded-lg font-medium transition flex items-center justify-center gap-2"
+                    >
+                      📚 Wikipedia 상세 분석
+                    </button>
+                  )}
                 </div>
               ))}
-
-              {/* 전체 환각률 */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded"></div>
-                  </div>
-                  <span className="text-blue-700 font-medium">
-                    환각률: {analysis}
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         )}
 
-        {/* --- Wikipedia+SBERT+NLI 분석 섹션 --- */}
-        <div className="mt-8 p-4 border rounded-xl bg-blue-50">
-          <div className="font-bold mb-2 text-blue-700">
-            Wikipedia+SBERT+NLI 분석
-          </div>
-          <div className="flex flex-col gap-2">
-            {/* 감점 설정 UI */}
-            <div className="flex gap-2 items-center">
-              <label className="text-sm">contradiction 감점</label>
-              <input
-                type="number"
-                step="0.01"
-                min={0}
-                max={1}
-                value={contradictionPenalty}
-                onChange={(e) =>
-                  setContradictionPenalty(Number(e.target.value))
-                }
-                className="border rounded px-2 py-1 w-20"
-              />
-              <label className="text-sm">neutral 감점</label>
-              <input
-                type="number"
-                step="0.01"
-                min={0}
-                max={1}
-                value={neutralPenalty}
-                onChange={(e) => setNeutralPenalty(Number(e.target.value))}
-                className="border rounded px-2 py-1 w-20"
-              />
-              <label className="text-sm flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={saveExcel}
-                  onChange={(e) => setSaveExcel(e.target.checked)}
-                  className="mr-1"
-                />
-                Excel 저장
-              </label>
-            </div>
+        {/* 상세 분석 모달 */}
+        {showDetailModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800">
+                  Wikipedia 상세 분석 결과
+                </h2>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
 
-            {/* 기준 문장 (GPT 응답이 자동으로 채워짐) */}
-            <div>
-              <label className="text-sm font-medium text-blue-700 mb-1 block">
-                기준 문장 (GPT 응답에서 자동 채워짐)
-              </label>
-              <textarea
-                className="border rounded px-3 py-2 w-full h-20 resize-none"
-                placeholder="GPT 응답이 자동으로 채워집니다..."
-                value={wikiQuery}
-                onChange={(e) => setWikiQuery(e.target.value)}
-              />
-            </div>
-
-            {/* 키워드들 (키워드 추출 결과에서 자동으로 채워짐) */}
-            <div>
-              <label className="text-sm font-medium text-green-700 mb-1 block">
-                키워드들 (키워드 추출 결과에서 자동 채워짐)
-              </label>
-              <input
-                className="border rounded px-3 py-2 w-full"
-                placeholder="키워드 추출 결과에서 자동으로 채워집니다..."
-                value={wikiKeywords}
-                onChange={(e) => setWikiKeywords(e.target.value)}
-              />
-            </div>
-
-            {/* 대표 키워드 (첫 번째 키워드가 자동으로 채워짐) */}
-            <div>
-              <label className="text-sm font-medium text-purple-700 mb-1 block">
-                대표 키워드 (첫 번째 키워드가 자동으로 채워짐)
-              </label>
-              <input
-                className="border rounded px-3 py-2 w-full"
-                placeholder="첫 번째 키워드가 자동으로 채워집니다..."
-                value={wikiMainKeyword}
-                onChange={(e) => setWikiMainKeyword(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm">상위 후보 개수 (top_k)</label>
-              <input
-                className="border rounded px-3 py-2"
-                type="number"
-                min={1}
-                max={10}
-                value={wikiTopK}
-                onChange={(e) => setWikiTopK(Number(e.target.value))}
-              />
-            </div>
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold mt-2 disabled:bg-gray-300"
-              onClick={handleWikiAnalyze}
-              disabled={
-                isWikiAnalyzing || !wikiQuery.trim() || !wikiMainKeyword.trim()
-              }
-            >
-              {isWikiAnalyzing ? '분석 중...' : 'Wikipedia+SBERT+NLI 분석하기'}
-            </button>
-            {wikiError && (
-              <div className="text-red-600 text-sm mt-1">{wikiError}</div>
-            )}
-          </div>
-        </div>
-
-        {/* 키워드 정보 표시 */}
-        {showWikiResult &&
-          (expandedKeywords.length > 0 || originalKeywords.length > 0) && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <h3 className="text-lg font-semibold text-blue-800 mb-3">
-                🔍 검색 키워드 정보
-              </h3>
-
-              {/* 원본 키워드 */}
-              {originalKeywords.length > 0 && (
-                <div className="mb-3">
-                  <h4 className="text-sm font-medium text-blue-700 mb-2">
-                    📝 원본 키워드:
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {originalKeywords.map((keyword, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-                      >
-                        {keyword}
-                      </span>
-                    ))}
+              <div className="space-y-3">
+                {wikiResults.slice(0, 5).map((result: any, index: number) => (
+                  <div
+                    key={index}
+                    className={`border rounded-xl p-4 ${
+                      result.hallucination_judgment ===
+                      '할루시네이션일 가능성 있음'
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-green-50 border-green-200'
+                    }`}
+                  >
+                    <div className="text-sm text-gray-600 mb-3">
+                      {result.sentence}
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      {result.hallucination_judgment ===
+                      '할루시네이션일 가능성 있음' ? (
+                        <>
+                          <span className="text-red-500 text-xl">❌</span>
+                          <span className="text-red-700 font-medium">
+                            할루시네이션 가능성 있음
+                          </span>
+                          <span className="text-red-500 text-xl">❌</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-green-500 text-xl">✓</span>
+                          <span className="text-green-700 font-medium">
+                            할루시네이션 가능성이 낮습니다
+                          </span>
+                          <span className="text-green-500 text-xl">✓</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      <div>판단: {result.hallucination_judgment || 'N/A'}</div>
+                      <div>
+                        유사도: {Math.round(result.similarity * 1000) / 1000}
+                      </div>
+                      <div>
+                        NLI: {result.nli_label} (
+                        {Math.round(result.nli_score * 1000) / 1000})
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* 확장된 키워드 */}
-              {expandedKeywords.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-green-700 mb-2">
-                    🔗 확장된 키워드 (유사어 포함):
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {expandedKeywords.map((keyword, index) => {
-                      const isOriginal = originalKeywords.includes(keyword);
-                      return (
-                        <span
-                          key={index}
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            isOriginal
-                              ? 'bg-blue-200 text-blue-800 border-2 border-blue-300'
-                              : 'bg-green-100 text-green-800 border border-green-300'
-                          }`}
-                        >
-                          {keyword}
-                          {isOriginal && (
-                            <span className="ml-1 text-xs">(원본)</span>
-                          )}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-          )}
-
-        {/* --- 분석 결과 시각화: 항상 상단에 고정 --- */}
-        <div className="mb-6">
-          <WikiAnalysisResult
-            results={showWikiResult ? wikiResults : []}
-            calcFinalScore={calcFinalScore}
-          />
-        </div>
+          </div>
+        )}
       </>
     );
   };

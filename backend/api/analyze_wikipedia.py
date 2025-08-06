@@ -59,6 +59,7 @@ class WikipediaCandidate(BaseModel):
     nli_score: float
     final_score: float
     summary_method: str = ""  # 요약 방식 표시
+    hallucination_judgment: str = ""  # 할루시네이션 판단
 
 @router.post("/analyze/wikipedia")
 def analyze_wikipedia(req: AnalyzeWikipediaRequest):
@@ -200,7 +201,19 @@ def analyze_wikipedia(req: AnalyzeWikipediaRequest):
     for c in candidates:
         c["final_score"] = c["similarity"]
     
-    # 7. 최종 정렬 및 반환
+    # 7. 할루시네이션 판단 로직 추가
+    def determine_hallucination(final_score: float) -> str:
+        """할루시네이션 판단 함수"""
+        if final_score >= 0.7:
+            return "할루시네이션일 가능성이 낮다"
+        else:
+            return "할루시네이션일 가능성 있음"
+    
+    # 각 후보에 할루시네이션 판단 추가
+    for c in candidates:
+        c["hallucination_judgment"] = determine_hallucination(c["final_score"])
+    
+    # 8. 최종 정렬 및 반환
     candidates = sorted(candidates, key=lambda x: x["final_score"], reverse=True)
     
     # Wikipedia API에서 확장된 키워드 정보를 포함하여 반환
